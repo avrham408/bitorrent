@@ -1,0 +1,21 @@
+torrnt file
+	a. orgnize reading torrent files
+	b. support multi files and DHT torrent files	
+	c. search on web away to see all types of torrent files
+
+trackers
+	a.udp
+	a.http
+	a.DHT
+
+manager
+	a. egg module V
+	b. build manager for project 
+	c. logger
+
+local-http-server
+	a.	
+
+tests
+
+git
