@@ -12,10 +12,13 @@ logger = logging.getLogger(__name__)
 
 class TorrentFile(object):
     def __init__(self, struct_dict):
+        self.multi_file = struct_dict['multi_file']
         self.path = struct_dict['path']
+        self.od_data = struct_dict['orderd_content'] # all the data in OrderdDict object
         self.trackers = struct_dict['trackers']
         self.info_hash = struct_dict['info_hash']
-        self.files = struct_dict['files']
+        if self.multi_file:
+            self.files = struct_dict['files']
         self.length = struct_dict['length']
         self.piece_length = struct_dict['piece_length']
         self.name = struct_dict['name']
@@ -29,11 +32,14 @@ class Tracker(object):
     the object contain 2 types of trackers udp or http trackers
     url(domain):str, path:str, type:'http' or 'udp, port:'int'
     """
-    
-    def __init__(self, url,port, path, tracker_type):
+    def __init__(self, tracker_type, url, path,  port=80):
+       self.tracker_type = tracker_type
        self.url = url
        self.path = path
-       self.tracker_type = tracker_type
+       self.port = 80
+
+    def __repr__(self):
+        return f'tracker({self.tracker_type}:{self.url}:{self.port}{self.path})'
 
 
 
@@ -113,7 +119,7 @@ def multi_file_parse(info_od):
     info_data['name'] = od_get_key(info_od, b'name', True)
     info_data['piece_length'] = od_get_key(info_od, b'piece length', True)
     info_data['pieces'] = od_get_key(info_od, b'pieces', True)
-    info_data['files'] = parse_files_data(od_get_key(info_od, b'files', True))
+    info_data['files'], info_data['length'] = parse_files_data(od_get_key(info_od, b'files', True))
     if not info_data['files']:
         logger.error("parsing torrent file failed")
         return False
@@ -122,13 +128,15 @@ def multi_file_parse(info_od):
 def parse_files_data(file_list):
     #only relevant for multi files because they have 'files' header
     parsed_list = []
+    total_length = 0
     for od_file in file_list: #OrderdDict file
         file_data = {}
         file_data['length'] = od_get_key(od_file, b'length', True)
+        total_length += file_data['length']
         # the path list consist one or more subdirectorys and the last file is the name of the file
         file_data['path'] = od_get_key(od_file, b'path', True)
         parsed_list.append(file_data)
-    return parsed_list
+    return parsed_list, total_length
 
 
 def single_file_parse(info_od):
@@ -139,21 +147,31 @@ def single_file_parse(info_od):
     info_data['pieces'] = od_get_key(info_od, b'pieces', True)
     return info_data 
 
-def create_tracker(bytes_url):
-    pass
+
+def create_tracker(url):
+    protocol, netloc , path, _, _ = urlsplit(url)
+    protocol 
+    if protocol != 'udp' and protocol != 'http' and protocol !=  'https':
+        logger.warning(f'the trackers {url} not conatin protocol')
+        return None
+    if netloc.find(':') == -1:
+        url = netloc
+        port = 80
+    else:
+        url, port = netloc.split(':')
+        port = int(port)
+    return Tracker(protocol, url, path, port)
+
 
 def get_trackers(od_torrent):
     announce_list = od_get_key(od_torrent, b'announce-list')
     if not announce_list:
-        return [create_tracker(od_get_key[b'announce'])]
+        return [create_tracker(od_get_key(od_torrent, b'announce', True).decode('utf-8'))]
     else:
-        pass
+        return [create_tracker(url.decode('utf-8'))  for url_list in announce_list for url in url_list]
         
-        
 
-
-
-def parse_content(path):
+def get_torrent_data(path):
     """
        main function in torrent file
        the function get file path and return dict with all torrent file data or false
@@ -189,7 +207,20 @@ def parse_content(path):
 
     #trackers
     trackers =  get_trackers(file_content)
+    torrent_cont['trackers'] = [tracker for tracker in trackers if tracker]
+    if not torrent_cont['trackers']:
+        logger.warning("the torrent file not contain any valid trackers")
+        return False
 
-
-
+    #path 
+    torrent_cont['path'] = path
     return torrent_cont
+     
+
+def torrent_file(path):
+    torrent_data_dict = get_torrent_data(path)
+    if not torrent_data_dict:
+        logger.warning('create  TorrentFile object failed')
+        return False
+    return TorrentFile(torrent_data_dict)
+
