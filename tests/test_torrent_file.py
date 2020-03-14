@@ -1,6 +1,7 @@
 import pytest
 from collections import OrderedDict
 from torrent.torrent_file import od_get_key, valid_torrent_path
+from os import listdir
 
 
 #od_get_key
@@ -39,8 +40,12 @@ def test_od_get_key_bed_types():
     with pytest.raises(TypeError):
         od_get_key(od)
 
-def test_valid_torrent_file_not_exist():
-    pass
+def test_valid_torrent_file_functionl():
+    test_files =  listdir('test_files/')
+    for test_torrent_file in files:
+        assert valid_torrent_path(test_torrent_file) != False
     
+
 if __name__ == "__main__":
-    test_od_get_key_error()
+    test_valid_torrent_file_functionl()
+    

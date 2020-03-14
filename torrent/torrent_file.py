@@ -53,14 +53,22 @@ def od_get_key(od, key, mandat=False):
     """
     if type(od) != OrderedDict:
         raise TypeError(f'od_get_key get {type(od)} and not OrderdDict object')
+    if type(mandat) != bool:
+        raise TypeError(f"od_get_key get '{mandat}' for mandat variable the function get only bool type" )
     try:
         return od[key]
     except KeyError as e:
         if mandat:
+            logger.warning(f'od_get_key get({od},{key},{mandat}) and raise KeyError', exc_info=True)
             raise e
         else:
             return None
-        
+    except TypeError as e:
+        if mandat:
+            logger.warning(f"od_get_key get({od},{key},{mandat}) key variable from type{type(key)}")
+            raise e
+        else:
+            return None
 
 #torrent parse functions
 def valid_torrent_path(path):
@@ -211,7 +219,6 @@ def get_torrent_data(path):
     if not torrent_cont['trackers']:
         logger.warning("the torrent file not contain any valid trackers")
         return False
-
     #path 
     torrent_cont['path'] = path
     return torrent_cont
