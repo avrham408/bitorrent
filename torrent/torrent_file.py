@@ -73,6 +73,9 @@ def od_get_key(od, key, mandat=False):
 #torrent parse functions
 def valid_torrent_path(path):
     # the function valid torrent object path
+    if type(path) != str:
+        logger.error(f"the path type is {type(path)} the function vaild_torrent_path get only string")
+        return False
     if not isfile(path):
         logger.error(f"the path {path} is not a File")
         return False
@@ -91,14 +94,14 @@ def read_file(path):
         return False
 
 
-def decode_file(raw_data):
+def decode_raw_data(raw_data):
     """
         the function get bits object and return 
         the file decode in bencoding format
     """
     try: 
         return Decoder(raw_data).decode()
-    except RuntimeError as e:
+    except (RuntimeError, TypeError) as e:
         logger.error("file content not in bencoding format", exc_info=True)
         return False
 
@@ -197,7 +200,7 @@ def get_torrent_data(path):
     torrent_cont['raw'] = file_content
 
     #decode file
-    file_content = decode_file(file_content)
+    file_content = decode_raw_data(file_content)
     torrent_cont['orderd_content'] = file_content
     if not torrent_cont['orderd_content']:
         return False
