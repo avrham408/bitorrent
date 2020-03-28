@@ -1,6 +1,8 @@
 import pytest
 from collections import OrderedDict
-from torrent.torrent_file import od_get_key, valid_torrent_path, read_file, decode_raw_data
+from torrent.torrent_file import valid_torrent_path, read_file, decode_raw_data, TorrentFile, generate_torrent_file,\
+parse_info, create_tracker
+from torrent.utilities import od_get_key
 from os import listdir
 
 TEST_FILES_DIR = 'test_files/' 
@@ -83,8 +85,58 @@ def test_decode_raw_data_not_bencoding_bytes():
     assert decode_raw_data(b'avi') == False
     assert decode_raw_data(TEST_FILES_DIR + 'bad_file') == False #add to good valid torrent file garbage
 
+def _files_list():
+    """
+    file.torrent - multi file annonunce, announce-list
+    file1.torrent - multi file with announce-list and url-list 
+    file2.torrent - multi file announce, announce-list
+    file3.torrent - single file announce, announce-list
+    file4.torrent - multi file  announce, announce-list and url-list 
+    file5.torrent - single url-list contain alot of bulshit for future
+    """
+    
+    files = ['file.torrent', 'file1.torrent', 'file2.torrent', 'file3.torrent', 'file4.torrent']
+    return [TEST_FILES_DIR + path for path in files]
 
+def test_generate_torrent_file_multi():
+    files = _files_list()
+    for path in files:
+        torrent_file = generate_torrent_file(path)
+        od_struct = torrent_file.od_data
+        try:
+            if od_struct[b'info'][b'files']:
+                assert torrent_file.multi_file
+        except KeyError:
+            assert torrent_file.multi_file == False
+
+def test_generate_torrent_file_path():
+    files = _files_list()
+    for path in files:
+        torrent_file = generate_torrent_file(path)
+        assert torrent_file.path == path
+
+def test_generate_torrent_file_trackers():
+    files = _files_list()
+    for path in files:
+        torrent = generate_torrent_file(path)
+        list_of_trackers = decode_raw_data(read_file(path))[b'announce-list']
+        list_of_trackers = [create_tracker(tracker.decode('utf-8')) for track_list in list_of_trackers for tracker in track_list]
+        list_of_trackers = [tracker for tracker in list_of_trackers if tracker]
+        for tracker in list_of_trackers:
+            assert tracker in torrent.trackers
+        
+
+def test_generate_torrent_not_duplicate_tracker():
+    files = _files_list()
+    for path in files:
+        tracker_list = generate_torrent_file(path).trackers
+        for _ in range(len(tracker_list)):
+            tracker = tracker_list.pop()
+            for t in tracker_list:
+                assert  t.tracker_type != tracker.tracker_type or t.url != tracker.url or t.path != tracker.path or t.port != tracker.port
+
+            
 
 
 if __name__ == "__main__":
-    test_decode_raw_data_not_bencoding_bytes()
+    pass

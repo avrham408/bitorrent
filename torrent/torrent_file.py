@@ -1,16 +1,17 @@
 from torrent.bencoding import Encoder, Decoder
+from torrent.utilities import od_get_key
 import logging
 from enum import Enum
 from hashlib import sha1
 from os.path import isfile
-from collections import OrderedDict
 from urllib.parse import urlsplit
-
+from random import randint
+ 
 logger = logging.getLogger(__name__)
 
 #classes
 
-class TorrentFile(object):
+class TorrentFile():
     def __init__(self, struct_dict):
         self.multi_file = struct_dict['multi_file']
         self.path = struct_dict['path']
@@ -22,10 +23,17 @@ class TorrentFile(object):
         self.length = struct_dict['length']
         self.piece_length = struct_dict['piece_length']
         self.name = struct_dict['name']
+        if type(self.name) == bytes:
+            self.name = self.name.decode('utf-8')
         self.pieces = struct_dict['pieces']
         self.raw_content = struct_dict['raw']
+        self.id = '-PC0001-' + ''.join([str(randint(0, 9)) for _ in range(12)])
 
-class Tracker(object):
+    def __repr__(self):
+        return f"torrent_file({self.name.decode('utf-8')})"
+
+
+class Tracker():
     #TODO think if this is the right place hold this object and if the the future the tracker going to
     #manage the connection
     """
@@ -33,42 +41,30 @@ class Tracker(object):
     url(domain):str, path:str, type:'http' or 'udp, port:'int'
     """
     def __init__(self, tracker_type, url, path,  port=80):
-       self.tracker_type = tracker_type
-       self.url = url
-       self.path = path
-       self.port = 80
+        self.tracker_type = tracker_type 
+        self.url = url
+        self.path = path
+        self.port = port
+
+    def http_url(self):
+        return f'{self.tracker_type}://{self.url}:{self.port}{self.path}'
 
     def __repr__(self):
         return f'tracker({self.tracker_type}:{self.url}:{self.port}{self.path})'
 
+    def __hash__(self):
+        return hash(self.url)
+
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__ and self.url == other.url and self.tracker_type == other.tracker_type and self.port == other.port)
+
+    def __ne__(self, other):
+        return not self.__eq__(self, other)
+    
+
 
 
 #help functions
-def od_get_key(od, key, mandat=False):
-    """
-    the function get OrederdDict object key and mandet
-    the function try to get back the data from the od 
-    if it mandat raise the error if the key is not mandat 
-    return None
-    """
-    if type(od) != OrderedDict:
-        raise TypeError(f'od_get_key get {type(od)} and not OrderdDict object')
-    if type(mandat) != bool:
-        raise TypeError(f"od_get_key get '{mandat}' for mandat variable the function get only bool type" )
-    try:
-        return od[key]
-    except KeyError as e:
-        if mandat:
-            logger.warning(f'od_get_key get({od},{key},{mandat}) and raise KeyError', exc_info=True)
-            raise e
-        else:
-            return None
-    except TypeError as e:
-        if mandat:
-            logger.warning(f"od_get_key get({od},{key},{mandat}) key variable from type{type(key)}")
-            raise e
-        else:
-            return None
 
 #torrent parse functions
 def valid_torrent_path(path):
@@ -162,12 +158,18 @@ def single_file_parse(info_od):
 def create_tracker(url):
     protocol, netloc , path, _, _ = urlsplit(url)
     protocol 
+    if protocol == 'wss': #temp for deletion in future
+    #TODO support wss protocol
+        return None
     if protocol != 'udp' and protocol != 'http' and protocol !=  'https':
         logger.warning(f'the trackers {url} not conatin protocol')
         return None
     if netloc.find(':') == -1:
         url = netloc
-        port = 80
+        if protocol == 'http':
+            port = 80
+        else:
+            port = 443
     else:
         url, port = netloc.split(':')
         port = int(port)
@@ -176,11 +178,19 @@ def create_tracker(url):
 
 def get_trackers(od_torrent):
     announce_list = od_get_key(od_torrent, b'announce-list')
-    if not announce_list:
-        return [create_tracker(od_get_key(od_torrent, b'announce', True).decode('utf-8'))]
-    else:
-        return [create_tracker(url.decode('utf-8'))  for url_list in announce_list for url in url_list]
-        
+    url_list =  od_get_key(od_torrent, b'url-list')
+    single_announce =  od_get_key(od_torrent, b'announce')
+    trackers = []
+    
+    if announce_list:
+        trackers += [create_tracker(url.decode('utf-8'))  for list_of_url in announce_list for url in list_of_url]
+    if single_announce: 
+        trackers += [create_tracker((single_announce).decode('utf-8'))]
+    if url_list: #TODO add support to wss tracker type (b'url-list' header) 
+        pass
+    return list(set(trackers))
+    
+
 
 def get_torrent_data(path):
     """
@@ -227,7 +237,7 @@ def get_torrent_data(path):
     return torrent_cont
      
 
-def torrent_file(path):
+def generate_torrent_file(path):
     torrent_data_dict = get_torrent_data(path)
     if not torrent_data_dict:
         logger.warning('create  TorrentFile object failed')

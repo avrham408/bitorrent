@@ -7,12 +7,12 @@ LOGGING_CONFIG = {
     'disable_existing_loggers': True,
     'formatters': { 
         'simple': { 
-         "format": "%(asctime)s - %(name)s - %(levelname)s - %(lineno)d %(message)s ;"
+         "format": "%(asctime)s - %(name)s - %(levelname)s - %(lineno)d %(message)s\t"
  } ,
     },
     'handlers': { 
         'default': { 
-            'level': 'INFO',
+            'level': 'DEBUG',
             'formatter': 'simple',
             'class': 'logging.StreamHandler',
             'stream': 'ext://sys.stdout',  # Default is stde

@@ -1,21 +1,29 @@
 torrnt file
-	a. orgnize reading torrent files
-	b. support multi files and DHT torrent files	
-	c. search on web away to see all types of torrent files
+	a. orgnize reading torrent files  V
+	b. support multi files	V
+	c. support DHT and wss protocols
+	d. 	
 
 trackers
-	a.udp
-	a.http
-	a.DHT
+	a.udp 
+	b.http V
+	c.DHT
+	d.wss
+
+
 
 manager
 	a. egg module V
 	b. build manager for project 
-	c. logger
+	c. logger V
+		1. build logging module V
+		2. support manage the log system
 
-local-http-server
-	a.	
+local-http-server	
 
 tests
+	a. add full coverage for torrent_file.py 
 
 git
+	a.pull requests to adar
+
