@@ -41,16 +41,21 @@ class Tracker():
     url(domain):str, path:str, type:'http' or 'udp, port:'int'
     """
     def __init__(self, tracker_type, url, path,  port=80):
-        self.tracker_type = tracker_type 
+        self.schema = tracker_type
         self.url = url
         self.path = path
         self.port = port
 
+        if tracker_type == 'https':
+            self.tracker_type = 'http'
+        else:
+            self.tracker_type = tracker_type 
+
     def http_url(self):
-        return f'{self.tracker_type}://{self.url}:{self.port}{self.path}'
+        return f'{self.schema}://{self.url}:{self.port}{self.path}'
 
     def __repr__(self):
-        return f'tracker({self.tracker_type}:{self.url}:{self.port}{self.path})'
+        return f'tracker({self.schema}:{self.url}:{self.port}{self.path})'
 
     def __hash__(self):
         return hash(self.url)

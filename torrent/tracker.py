@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 #udp tracket
 @run_async
-def udp_request(tracker, torrent_file, peer_manager, wait = 0):
+def udp_request(tracker, torrent_file, peer_manager, wait = 0, recursive=False):
     """ 
     the function get tracker object and request for peers
     steps:
@@ -34,12 +34,12 @@ def udp_request(tracker, torrent_file, peer_manager, wait = 0):
     logger.debug(f"try to connect {tracker}")
     udp_tracker_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     connect_message = create_connect_req_struct()    
-    logger.debug("connect to socket")
+    logger.debug("connect to socket succssed")
     try:
         socket_connecion_request  = udp_tracker_socket.sendto(connect_message, (tracker.url, tracker.port))
     except socket.gaierror:
         logger.debug("error in open socket")
-        udp_request(tracker, torrent_file, peer_manager, (wait + 1) * 2)
+        udp_request(tracker, torrent_file, peer_manager, (wait + 1) * 2, recursive=True)
     except Exception:
         logger.error("error in open sockt", exc_info=True)
         return False
@@ -50,7 +50,7 @@ def udp_request(tracker, torrent_file, peer_manager, wait = 0):
     if not packet_data:
         logging.debug("connect to peer failed")
         udp_tracker_socket.close()
-        udp_request(tracker, torrent_file, peer_manager, (wait + 1) * 4)
+        udp_request(tracker, torrent_file, peer_manager, (wait + 1) * 4, recursive=True)
 
     action = packet_data[0]
     if action == 3 :
@@ -69,21 +69,23 @@ def udp_request(tracker, torrent_file, peer_manager, wait = 0):
         return None
 
     #announce request
+    r = 1
     while True:
+        logging.info(f"round {r} for {tracker}")
         announce_message = announcing_req_packet(torrent_file, connection_id)
         try:
             socket_connecion_request  = udp_tracker_socket.sendto(announce_message, (tracker.url, tracker.port))
         except Exception:
             logger.info("error in send udp announce request", exc_info=True)
             udp_tracker_socket.close()
-            udp_request(tracker, torrent_file, peer_manager, (wait + 1) * 4)
+            udp_request(tracker, torrent_file, peer_manager, (wait + 1) * 4, recursive=True)
 
         #announce response
         packet_data = read_response_from_socket(udp_tracker_socket)
         if not packet_data:
             logging.debug("announce request failed no answer")
             udp_tracker_socket.close()
-            udp_request(tracker, torrent_file, peer_manager, (wait + 60) * 2)
+            udp_request(tracker, torrent_file, peer_manager, (wait + 60) * 2, recursive=True)
         action = packet_data[0]
         if action == 3 :
             #TODO handle 3 action
@@ -99,8 +101,11 @@ def udp_request(tracker, torrent_file, peer_manager, wait = 0):
         except ValueError as e:
             logging.error("read_response_from_socket return data not in the format", exc_info=True)
             return None
+
         peer_manager.add_peers(peers)
+        logging.info(f"peers add to peer_manager and go to sleep for {interval} seconds")
         sleep(interval)
+        r += 1
     
 
 def read_response_from_socket(sock):
@@ -220,7 +225,7 @@ def http_request(url, peer_manager,wait=0, recursive=False):
             return http_request(url, peer_manager, wait + 30 * 2)
         interval, peers = parsed_res
         peer_manager.add_peers(peers)
-        logging.debug("add peers to peer_manager successed")
+        logging.info(f"peers add to peer_manager and go to sleep for {interval} seconds")
         sleep(interval)
 
 
@@ -277,8 +282,21 @@ def get_ip(ip_address):
 
 
 #request manager
-def request_manager(torrent_file):
-    pass
+def tracker_manager(torrent_file, peer_manager):
+    tracker_threads = []
+    for tracker in torrent_file.trackers:
+        if tracker.tracker_type == 'http':
+            url = create_url_for_http_tracker(torrent_file, tracker, torrent_file.length)
+            tracker_threads.append(http_request(url, peer_manager))
+        elif tracker.tracker_type == 'udp':
+            tracker_threads.append(udp_request(tracker, torrent_file, peer_manager))
+        else:
+            #TODO add support to dht protocol
+            pass
+    return tracker_threads
+        
+
+
 
 if __name__ == "__main__":
     pass
