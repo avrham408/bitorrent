@@ -1,11 +1,12 @@
 from utilties import valid_internet, _files_list, kill_thread
-from torrent.tracker import tracker_manager, udp_request
+from torrent.tracker import tracker_manager, udp_request, http_request, create_url_for_http_tracker
 from torrent.peer_manager import Peer_manager
 from torrent.torrent_file import generate_torrent_file
 import logging
 from time import sleep 
 from random import choice
-
+from threading import Thread
+from urllib.parse import urlparse, parse_qs
 
 logger = logging.getLogger(__name__)
 
@@ -23,9 +24,8 @@ def test_tracker_manager_tracker_alive():
             if thread.result_queue.empty():
                 assert thread.is_alive()
             else:
-                pass
-
-        #close
+                assert not thread.is_alive()
+            
         for thread in tracker_threads:
             kill_thread(thread)
         
@@ -99,11 +99,47 @@ def test_udp_request_http_tracker():
    assert thread.result_queue.get().value == 2
 
 
+@valid_internet
+def test_udp_request_recursive_true():
+   path = _files_list()[3]
+   torrent_file = generate_torrent_file(path)
+   peer_manager = Peer_manager()
+   thread = udp_request(torrent_file.trackers[0], torrent_file, peer_manager, recursive=True)
+   assert type(thread) != Thread
 
-    
+
+def test_create_url_for_http_tracker():
+    path = _files_list()[3]
+    torrent_file = generate_torrent_file(path)   
+    peer_manager = Peer_manager()
+    for tracker in torrent_file.trackers:
+        #TODO add asser for query string
+        url = create_url_for_http_tracker(torrent_file, tracker, torrent_file.length)
+        schema, netloc, path, _, query, _ = urlparse(url)
+        base_url = schema + '://' +  netloc + path
+        assert base_url == 'https://ipv6.torrent.ubuntu.com:443/announce' or base_url == 'https://torrent.ubuntu.com:443/announce'
+        
+
+@valid_internet
+def test_http_request_good_tracker():
+    path = _files_list()[3]
+    torrent_file = generate_torrent_file(path)   
+    peer_manager = Peer_manager()
+    for tracker in torrent_file.trackers:
+       if tracker.url == 'torrent.ubuntu.com':
+            good_tracker = tracker
+
+    url = create_url_for_http_tracker(torrent_file, tracker,torrent_file.length)
+    thread = http_request(url, peer_manager)
+    sleep(6)
+    assert thread.is_alive()
+    assert not peer_manager.peers.empty()
+    kill_thread(thread) 
+
+
+
 
 if __name__ == "__main__":
-    test_udp_request_http_tracker()
-
+    test_tracker_manager_tracker_alive()
 
 

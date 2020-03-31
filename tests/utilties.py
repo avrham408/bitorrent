@@ -43,4 +43,3 @@ def kill_thread(t):
     if t.is_alive():
         t._tstate_lock.release()
         t._stop()
-    logging.info("avi")

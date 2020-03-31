@@ -13,14 +13,14 @@ from enum import Enum
 
 logger = logging.getLogger(__name__)
 
-class Udp_Error(Enum):
+class UdpError(Enum):
     unknown_error = 0
     info_hash = 1
     not_valid_tracker = 2
+    request_error = 3
 
-    
 
-#udp tracket
+#udp tracker
 @run_async
 def udp_request(tracker, torrent_file, peer_manager, wait = 0, recursive=False):
     """ 
@@ -41,86 +41,122 @@ def udp_request(tracker, torrent_file, peer_manager, wait = 0, recursive=False):
     """
     if tracker.tracker_type != "udp":
         logger.error(f"udp_request start with not valid tracker: {tracker}")
-        return Udp_Error.not_valid_tracker
-
+        return UdpError.not_valid_tracker
     if wait > 1800:
         wait = 1800
     sleep(wait)
-    #connection request
+    #request
     logger.debug(f"try to connect {tracker}")
     udp_tracker_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    connect_message = create_connect_req_struct()    
     logger.debug("connect to socket succssed")
-    try:
-        socket_connecion_request  = udp_tracker_socket.sendto(connect_message, (tracker.url, tracker.port))
-    except socket.gaierror:
-        logger.debug("error in open socket")
-        udp_request(tracker, torrent_file, peer_manager, (wait + 1) * 2, recursive=True)
-    except Exception:
-        logger.error("error in open sockt", exc_info=True)
-        return False
-
-    #connection rsponse 
-    logger.debug("start connection response")
-    packet_data = read_response_from_socket(udp_tracker_socket)
-    if not packet_data:
-        logger.debug("connect to peer failed")
+    socket_connecion_request = socket_send_to(udp_tracker_socket, tracker,create_connect_req_struct())
+    if not socket_connecion_request:
         udp_tracker_socket.close()
-        udp_request(tracker, torrent_file, peer_manager, (wait + 1) * 4, recursive=True)
-
-    action = packet_data[0]
-    if action == 3 :
-        #TODO handle 3 action
-        logger.info(f"server response with error- {packet_data[1]}")
+        udp_request(tracker, torrent_file, peer_manager, (wait + 60) * 2, recursive=True)
+    if socket_connecion_request == UdpError.request_error:
         udp_tracker_socket.close()
-        return None 
-    elif action != 0:
-        logger.info(f"somthing got worng with response code for connection the action is {action}")
+        return UdpError.request_error
+    connection_res = udp_request_connection_response(udp_tracker_socket)
+    if connection_res == 0:
         udp_tracker_socket.close()
-        udp_request(tracker, torrent_file, peer_manager, (wait + 1) * 4)
-    try:
-        transcation_id, connection_id = packet_data[1]
-    except ValueError as e:
-        logger.error("read_response_from_socket return data not in the format", exc_info=True)
+        udp_request(tracker, torrent_file, peer_manager, (wait + 60) * 2, recursive=True)
+    if connection_res == 1:
         return None
-
-    #announce request
+    if type(connection_res) == UdpError:
+        return connection_res 
+    transcation_id, connection_id = connection_res
+    #announce
     while True:
-        announce_message = announcing_req_packet(torrent_file, connection_id)
-        try:
-            socket_connecion_request  = udp_tracker_socket.sendto(announce_message, (tracker.url, tracker.port))
-        except Exception:
-            logger.info("error in send udp announce request", exc_info=True)
+        socket_announce_request = socket_send_to(udp_tracker_socket, tracker,announcing_req_packet(torrent_file, connection_id))
+        if socket_announce_request == UdpError.request_error:
             udp_tracker_socket.close()
-            udp_request(tracker, torrent_file, peer_manager, (wait + 1) * 4, recursive=True)
-
-        #announce response
-        packet_data = read_response_from_socket(udp_tracker_socket)
-        if not packet_data:
-            logger.debug("announce request failed no answer")
+            return UdpError.request_error
+        elif not socket_announce_request:
             udp_tracker_socket.close()
             udp_request(tracker, torrent_file, peer_manager, (wait + 60) * 2, recursive=True)
-        action = packet_data[0]
-        if action == 3 :
-            if packet_data[1][0] == Udp_Error.info_hash:
-                logger.info("server back with error string of info hash not exist")
-                return packet_data[1][0] 
-            else:
-                return Udp_Error.unknown_error
-        elif action != 1:
-            logger.debug(f"somthing got worng with response code for connection the action is {action}")
+        announce_response = udp_request_announce_response(udp_tracker_socket)
+        if announce_response == 0:
             udp_tracker_socket.close()
-            return None 
-        try:
-            transcation_id, interval, leechers, seeders, peers = packet_data[1]
-        except ValueError as e:
-            logger.error("read_response_from_socket return data not in the format", exc_info=True)
+            udp_request(tracker, torrent_file, peer_manager, (wait + 60) * 2, recursive=True)
+        if announce_response == 1:
+            udp_tracker_socket.close()
             return None
-
+        if type(announce_response) == UdpError:
+            return announce_response 
+        interval, peers = announce_response 
         peer_manager.add_peers(peers)
         logger.info(f"peers add to peer_manager and go to sleep for {interval} seconds")
         sleep(interval)
-    
+
+
+def udp_request_connection_response(sock):
+    """
+    errors:
+        0 = restart
+        1 = kill thread 
+        UdpError
+    """
+    logger.debug("start connection response")
+    packet_data = read_response_from_socket(sock)
+    if not packet_data:
+        logger.debug("connect to tracker failed")
+        return 0
+    action = packet_data[0]
+    if action == 3 :
+        return _handle_error_action(packet_data[1][0])
+    elif action != 0:
+        logger.info(f"somthing got worng with response code for connection the action is {action}")
+        return 0
+    try:
+        return packet_data[1]
+    except ValueError as e:
+        logger.error("read_response_from_socket return data not in the format", exc_info=True)
+        return 1
+
+
+def socket_send_to(sock, tracker, message):
+    try:
+        return sock.sendto(message, (tracker.url, tracker.port))
+    except socket.gaierror:
+        logger.debug("error in open socket")
+        return False 
+    except Exception:
+        logger.error("error in send udp announce request", exc_info=True)
+        return UdpError.request_error
+       
+
+def udp_request_announce_response(sock):
+    """
+    errors:
+        0 = restart
+        1 = kill thread 
+        UdpError
+    """
+    packet_data = read_response_from_socket(sock)
+    if not packet_data:
+        logger.debug("announce request failed no answer")
+        return 0 
+    action = packet_data[0]
+    if action == 3 :
+        return _handle_error_action(packet_data[1][0])
+
+    elif action != 1:
+        logger.debug(f"somthing got worng with response code for connection the action is {action}")
+        return 1
+    try:
+        transcation_id, interval, leechers, seeders, peers = packet_data[1]
+    except ValueError as e:
+        logger.error("read_response_from_socket return data not in the format", exc_info=True)
+        return 1 
+    return interval, peers
+
+def _handle_error_action(error):
+    if error == UdpError.info_hash:
+        logger.info("server back with error string of info hash not exist")
+        return error
+    else:
+        return UdpError.unknown_error
+
 
 def read_response_from_socket(sock):
     """ the function manage reading from socket
@@ -229,13 +265,12 @@ def get_peers(peers):
 def parse_error_to_code(error):
     """
     1 unknown option type - info hash is not available
-
     """
-    if error.lower().strip() == "unknown option type":
-        return Udp_Error.info_hash
+    if "unknown option type" in error.lower().strip():
+        return UdpError.info_hash
     else:
         logger.error(f"unknown error - {error}")
-        Udp_Error.unknown_error
+        UdpError.unknown_error
 
 #http functions
 @run_async
