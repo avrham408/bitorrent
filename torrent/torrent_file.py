@@ -30,7 +30,7 @@ class TorrentFile():
         self.id = '-PC0001-' + ''.join([str(randint(0, 9)) for _ in range(12)])
 
     def __repr__(self):
-        return f"torrent_file({self.name.decode('utf-8')})"
+        return f"torrent_file({self.name})"
 
 
 class Tracker():

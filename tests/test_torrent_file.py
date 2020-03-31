@@ -141,7 +141,20 @@ def test_tracker_with_http_schema():
         if tracker.tracker_type == 'http':
             assert tracker.schema == "http" 
             
+def test_torrent_file_repr():
+    files = _files_list()
+    for path in files:
+        tracker_file = generate_torrent_file(path)
+        assert tracker_file
+
+def test_tracker_repr():
+    files = _files_list()
+    for path in files:
+        torrent_file = generate_torrent_file(path)
+        for tracker in torrent_file.trackers:
+            assert tracker
+
 
 
 if __name__ == "__main__":
-    test_tracker_with_http_schema()
+    pass

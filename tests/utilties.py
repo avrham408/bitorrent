@@ -4,6 +4,7 @@ import logging
 logger = logging.getLogger(__name__)
 TEST_FILES_DIR = 'test_files/' 
 
+
 def valid_internet(f):
     def web_site_online(url='http://www.google.com/', timeout=5):
         try:
@@ -23,6 +24,7 @@ def valid_internet(f):
         return f(*args, **kwargs)
     return wrap
 
+
 def _files_list():
     """
     file.torrent - multi file annonunce, announce-list
@@ -35,3 +37,10 @@ def _files_list():
     
     files = ['file.torrent', 'file1.torrent', 'file2.torrent', 'file3.torrent', 'file4.torrent']
     return [TEST_FILES_DIR + path for path in files]
+
+
+def kill_thread(t):
+    if t.is_alive():
+        t._tstate_lock.release()
+        t._stop()
+    logging.info("avi")

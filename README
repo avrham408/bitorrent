@@ -1,10 +1,12 @@
 Tasks:
 
 	1. Read Torrent File V
-	2. grab get Trackers 
-	3. get data from peers
+	2. Grab get Trackers in threading 
+	3. get data from peers async aio
 	4. manage data
 	5. GUI
 	6. make it app
+
+
 
  
