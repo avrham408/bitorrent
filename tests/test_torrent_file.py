@@ -1,11 +1,11 @@
 import pytest
 from collections import OrderedDict
 from torrent.torrent_file import valid_torrent_path, read_file, decode_raw_data, TorrentFile, generate_torrent_file,\
-parse_info, create_tracker
+parse_info, create_tracker, _valid_pieces_is_devide_20
 from torrent.utilities import od_get_key
 from os import listdir
 import logging
-from utilties import _files_list
+from utilities import _files_list
 
 logger = logging.getLogger()
 
@@ -154,7 +154,18 @@ def test_tracker_repr():
         for tracker in torrent_file.trackers:
             assert tracker
 
+def test_valid_pieces_is_devide_20_not_raising_error_with_good_data():
+    with open(TEST_FILES_DIR + 'pieces_in_length', 'rb') as f:
+        pieces = f.read()
+    assert _valid_pieces_is_devide_20(pieces)
+
+def test_valid_pieces_is_devide_20_raising_error_with_bed_data():
+    with open(TEST_FILES_DIR + 'pieces_not_in_length', 'rb') as f:
+        pieces = f.read()
+    with pytest.raises(ValueError):
+        _valid_pieces_is_devide_20(pieces)
+
 
 
 if __name__ == "__main__":
-    pass
+    test_valid_pieces_is_devide_20_not_raising_error_with_good_data()

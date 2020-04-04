@@ -1,6 +1,6 @@
-from utilties import valid_internet, _files_list, kill_thread
+from utilities import valid_internet, _files_list, kill_thread
 from torrent.tracker import tracker_manager, udp_request, http_request, create_url_for_http_tracker
-from torrent.peer_manager import Peer_manager
+from torrent.peer import Peer_manager
 from torrent.torrent_file import generate_torrent_file
 import logging
 from time import sleep 
@@ -122,6 +122,7 @@ def test_create_url_for_http_tracker():
 
 @valid_internet
 def test_http_request_good_tracker():
+    #TODO the test fail if you run the untest more then one time in a row fix it...
     path = _files_list()[3]
     torrent_file = generate_torrent_file(path)   
     peer_manager = Peer_manager()
@@ -131,7 +132,7 @@ def test_http_request_good_tracker():
 
     url = create_url_for_http_tracker(torrent_file, tracker,torrent_file.length)
     thread = http_request(url, peer_manager)
-    sleep(6)
+    sleep(10)
     assert thread.is_alive()
     assert not peer_manager.peers.empty()
     kill_thread(thread) 
@@ -140,6 +141,6 @@ def test_http_request_good_tracker():
 
 
 if __name__ == "__main__":
-    test_tracker_manager_tracker_alive()
+    test_http_request_good_tracker()
 
 

@@ -130,7 +130,9 @@ def multi_file_parse(info_od):
     info_data = {'multi_file': True}
     info_data['name'] = od_get_key(info_od, b'name', True)
     info_data['piece_length'] = od_get_key(info_od, b'piece length', True)
-    info_data['pieces'] = od_get_key(info_od, b'pieces', True)
+    pieces = od_get_key(info_od, b'pieces', True)
+    _valid_pieces_is_devide_20(pieces)
+    info_data['pieces'] = pieces
     info_data['files'], info_data['length'] = parse_files_data(od_get_key(info_od, b'files', True))
     if not info_data['files']:
         logger.error("parsing torrent file failed")
@@ -156,8 +158,17 @@ def single_file_parse(info_od):
     info_data['length'] = od_get_key(info_od, b'length', True)
     info_data['name'] = od_get_key(info_od, b'name', True)
     info_data['piece_length'] = od_get_key(info_od, b'piece length', True)
-    info_data['pieces'] = od_get_key(info_od, b'pieces', True)
+    pieces = od_get_key(info_od, b'pieces', True)
+    _valid_pieces_is_devide_20(pieces)
+    info_data['pieces'] = pieces
     return info_data 
+
+
+def _valid_pieces_is_devide_20(pieces):
+    #raise error if pieces in torrent_file is contain piece hash can't be divided by 20 with no remainder
+    if len(pieces) % 20 != 0:
+        raise ValueError("Torrent file came with not valid pieces")
+    return True
 
 
 def create_tracker(url):

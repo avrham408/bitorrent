@@ -1,6 +1,4 @@
 import logging
-#from torrent.torrent_file import generate_torrent_file
-#from torrent.peer_manager import Peer_manager
 from torrent.utilities import run_async, od_get_key
 from torrent.bencoding import Decoder
 from urllib.parse import urlencode
@@ -197,7 +195,6 @@ def read_response_from_socket(sock):
         error_string = res[8:].decode('utf-8')
         logger.debug(f"error string from server")
         return action, [parse_error_to_code(error_string)]
-
     else:
         logger.warning(f"response code from server '{code}'")
         return None 
