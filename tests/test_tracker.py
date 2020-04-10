@@ -40,8 +40,8 @@ def test_udp_request_good_tracker():
             valid_tracker = tracker
 
     thread = udp_request(valid_tracker, torrent_file, peer_manager) 
-    sleep(10) 
-    assert not peer_manager.peers.empty()
+    sleep(15) 
+    assert peer_manager.peers.empty() == False
     kill_thread(thread)
     
 
@@ -132,15 +132,15 @@ def test_http_request_good_tracker():
 
     url = create_url_for_http_tracker(torrent_file, tracker,torrent_file.length)
     thread = http_request(url, peer_manager)
-    sleep(10)
+    sleep(15)
     assert thread.is_alive()
-    assert not peer_manager.peers.empty()
+    assert peer_manager.peers.empty() == False
     kill_thread(thread) 
 
 
 
 
 if __name__ == "__main__":
-    test_http_request_good_tracker()
+    test_udp_request_good_tracker()
 
 

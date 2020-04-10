@@ -81,10 +81,20 @@ def udp_request(tracker, torrent_file, peer_manager, wait = 0, recursive=False):
             return None
         if type(announce_response) == UdpError:
             return announce_response 
-        interval, peers = announce_response 
-        peer_manager.add_peers(peers)
-        logger.info(f"peers add to peer_manager and go to sleep for {interval} seconds")
+        interval, peers = announce_response
+        parsed_peers = parse_peers(peers) 
+        peer_manager.add_peers(parsed_peers)
+        logger.info(f"{len(peers)}peers add to peer_manager and go to sleep for {interval} seconds")
         sleep(interval)
+
+
+def  parse_peers(raw_peers):
+    parsed_peers = []
+    for peer in raw_peers:
+        ip = get_ip(struct.pack('>I', peer[0]))
+        port = peer[1]
+        parsed_peers.append((ip, port))
+    return parsed_peers 
 
 
 def udp_request_connection_response(sock):
@@ -236,7 +246,7 @@ def create_connect_req_struct(protocol_id=0X41727101980, transcation_id=randrang
 def announcing_req_packet(torrent_file, connection_id, left=0, downloaded=0, uploaded=0, event=0):
     action = 1
     transcation_id = randrange(0, 65535)
-    peer_id = ('-PC0001-' + ''.join([str(randint(0, 9)) for _ in range(12)])).encode('utf-8')
+    peer_id = torrent_file.peer_id.encode('utf-8')
     ip = 0
     key = 0
     num_want = -1
@@ -333,7 +343,7 @@ def create_url_for_http_tracker(torrent_file, tracker, left, uploaded=0, downloa
     
     params = {
     'info_hash': torrent_file.info_hash,
-    'peer_id': '-PC0001-' + ''.join([str(randint(0, 9)) for _ in range(12)]),
+    'peer_id': torrent_file.peer_id,
     'port': 6889,
     'uploaded': uploaded,
     'downloaded': downloaded,
@@ -359,7 +369,6 @@ def tracker_manager(torrent_file, peer_manager):
         else:
             #TODO add support to dht protocol
             pass
-
     return tracker_threads
         
 

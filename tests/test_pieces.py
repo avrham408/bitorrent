@@ -36,4 +36,4 @@ def test_create_pieces_manager_last_piece():
 
 
 if __name__ == "__main__":
-    test_create_pieces_manager_last_piece()
+    pass

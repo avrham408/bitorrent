@@ -26,8 +26,9 @@ class TorrentFile():
         if type(self.name) == bytes:
             self.name = self.name.decode('utf-8')
         self.pieces = struct_dict['pieces']
+        
         self.raw_content = struct_dict['raw']
-        self.id = '-PC0001-' + ''.join([str(randint(0, 9)) for _ in range(12)])
+        self.peer_id = '-PC0001-' + ''.join([str(randint(0, 9)) for _ in range(12)])
 
     def __repr__(self):
         return f"torrent_file({self.name})"

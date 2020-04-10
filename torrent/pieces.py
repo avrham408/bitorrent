@@ -1,13 +1,14 @@
 from enum import Enum
 from hashlib import sha1
 import logging
+import asyncio
 
 logger = logging.getLogger(__name__)
 
 class PieceStatus(Enum):
     free = 0 
-    in_progress = 1
     done = 2
+    in_progress = 1
 
 class Piece():
     """The piece object reprsent one piece from pieces in the info of torrent file
@@ -21,20 +22,20 @@ class Piece():
         self.blocks = []
         self.status = PieceStatus.free
 
-    def valid_sha1(self):
-        validation = sha1(self.piece_hash).digest() ==  sha1(b''.join(self.blocks)).digest()
+    def piece_done(self):
+        validation = self.piece_hash ==  sha1(b''.join(self.blocks)).digest()
         if validation:
-            logger.debug(f'piece {self.index} is valid')
+            logger.info(f'piece {self.index} is valid')
             self.status = PieceStatus.done
         else:
             logger.debug(f'piece {self.index} is not valid')
-            self._lost_piece()
+            self.lost_piece()
         return validation 
 
-    def _lost_piece(self):
-        self.debug(f"we lost a piece in index {self.index}")
+    def lost_piece(self):
+        logger.debug(f"we lost a piece in index {self.index}")
         self.status = PieceStatus.free
-        self.block = []
+        self.blocks = []
 
     def add_block(self, block):
         logger.debug(f"block add to piece {self.index}")
@@ -42,6 +43,7 @@ class Piece():
     
     def __repr__(self):
         return f"{self.index}:{self.status.name}"
+    
 
 class Piece_Manager():
     """
@@ -50,7 +52,7 @@ class Piece_Manager():
     """
     def __init__(self):
         self.pieces = []
-        self.piece_amount = 0
+        self.lock = False
 
     def add_piece(self, piece):
         if type(piece) != Piece:
@@ -72,16 +74,34 @@ class Piece_Manager():
             else:
                 raise Exception(f"{piece.index} have not valid status - {piece.status}")
                 logger.error(exc_info=True)
-        return {Pieces_status.free: free, PieceStatus.done: done, PieceStatus.in_progress: in_progress}
+        return {PieceStatus.free: free, PieceStatus.done: done, PieceStatus.in_progress: in_progress}
+    
+    async def get_piece(self):
+        while True:
+            if self.lock == False:
+                self.lock = True
+                for piece in self.pieces:
+                    if piece.status == PieceStatus.free:
+                        piece.status = PieceStatus.in_progress
+                        self.lock = False
+                        return piece
+                return None 
+                self.lock = False
+            else:
+                await asyncio.sleep(1)
+  
+
+    def __repr__(self):
+        return f'piece_manager{self.pieces_status()}'
 
 
 def create_piece_manager(torrent_file):
     piece_manager = Piece_Manager()
     piece_length = torrent_file.piece_length
-    index = 1
+    index = 0
     for piece_pointer in range(0, len(torrent_file.pieces) - 20, 20):
         piece_manager.add_piece(Piece(torrent_file.pieces[piece_pointer:piece_pointer+20], piece_length, index))
         index += 1
-    last_piece = Piece(torrent_file.pieces[20* index - 20: 20 * index], torrent_file.length % piece_length, index)
+    last_piece = Piece(torrent_file.pieces[20 * index: 20 * index + 20 ], torrent_file.length % piece_length, index)
     piece_manager.add_piece(last_piece)
     return piece_manager
