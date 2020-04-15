@@ -44,6 +44,14 @@ class Peer():
         self.ip = ip
         self.status = PeerStatus.free
 
+    def open_connection():
+        self.status = PeerStatus.in_progress
+        return self.ip, self.port
+
+    def close_connection():
+        #True is torrent done and False is connection problem
+        self.status = peerStatus.faile
+
     def __repr__(self):
         return f"{self.ip}:{self.port}"
 
