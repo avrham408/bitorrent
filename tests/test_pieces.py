@@ -34,6 +34,16 @@ def test_create_pieces_manager_last_piece():
         last_piece = piece_manager.pieces[len(piece_manager.pieces) - 1]
         assert torrent_file.length % torrent_file.piece_length == last_piece.length
 
+def test_all_pieces_in_status():
+    files = _files_list()
+    for torrent_path in files:
+        torrent_file = generate_torrent_file(torrent_path)
+        piece_manager = create_piece_manager(torrent_file)
+        status_dict = piece_manager.pieces_status()
+        assert len(piece_manager.pieces) == sum([i for i in status_dict.values()])
+
+    
+
 
 if __name__ == "__main__":
-    pass
+    test_all_pieces_in_status()

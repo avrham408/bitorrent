@@ -1,8 +1,7 @@
 import pytest
 from collections import OrderedDict
 from torrent.torrent_file import valid_torrent_path, read_file, decode_raw_data, TorrentFile, generate_torrent_file,\
-parse_info, create_tracker, _valid_pieces_is_devide_20
-from torrent.utilities import od_get_key
+parse_info, create_tracker, _validate_division_by_20
 from os import listdir
 import logging
 from utilities import _files_list
@@ -10,42 +9,6 @@ from utilities import _files_list
 logger = logging.getLogger()
 
 TEST_FILES_DIR = 'test_files/' 
-
-#od_get_key
-def test_od_get_key_functional():
-    od = OrderedDict({'a':'b', (1, 2): 62233, "adar": ['java', 'disc']}) #OrderedDict data
-    for key in od.keys():
-        assert od_get_key(od, key) == od[key]
-
-
-def test_od_get_key_error():
-    od = OrderedDict({'a':'b', (1, 2): 62233, "adar": ['java', 'disc']}) #OrderedDict data
-    #mandat = True
-    with pytest.raises(KeyError):
-        od_get_key(od, 'c', True)
-    with pytest.raises(KeyError):
-        od_get_key(od, (1,3), True)
-    with pytest.raises(TypeError):
-        od_get_key(od, ['a'], True)
-    #no mandat
-    assert od_get_key(od, ['a']) == None 
-    assert od_get_key(od, (1,3)) == None 
-    assert od_get_key(od, 'c') == None
-    #mandat == False
-    assert od_get_key(od, ['a'], False) == None 
-    assert od_get_key(od, (1,3), False) == None 
-    assert od_get_key(od, 'c', False) == None
-
-
-def test_od_get_key_bed_types():
-    test_dict = {'a':'b', (1, 2): 62233, "adar": ['java', 'disc']}
-    #n
-    with pytest.raises(TypeError):
-        od_get_key(test_dict, 'a', True)
-    od = OrderedDict(test_dict) #OrderedDict data
-    #not enough variables
-    with pytest.raises(TypeError):
-        od_get_key(od)
 
 
 def test_valid_torrent_file_functionl():
@@ -154,18 +117,17 @@ def test_tracker_repr():
         for tracker in torrent_file.trackers:
             assert tracker
 
-def test_valid_pieces_is_devide_20_not_raising_error_with_good_data():
+def test_validate_division_by_20_not_raising_error_with_good_data():
     with open(TEST_FILES_DIR + 'pieces_in_length', 'rb') as f:
         pieces = f.read()
-    assert _valid_pieces_is_devide_20(pieces)
+    assert _validate_division_by_20(pieces)
 
-def test_valid_pieces_is_devide_20_raising_error_with_bed_data():
+def test_validate_division_by_20_raising_error_with_bed_data():
     with open(TEST_FILES_DIR + 'pieces_not_in_length', 'rb') as f:
         pieces = f.read()
     with pytest.raises(ValueError):
-        _valid_pieces_is_devide_20(pieces)
-
+        _validate_division_by_20(pieces)
 
 
 if __name__ == "__main__":
-    test_valid_pieces_is_devide_20_not_raising_error_with_good_data()
+    pass

@@ -5,10 +5,11 @@ torrnt file
 	d. 	
 
 trackers
-	a.udp 
+	a.udp V
 	b.http V
 	c.DHT
 	d.wss
+	e. fix udp tracker problem code not readable
 
 
 
@@ -22,8 +23,9 @@ manager
 local-http-server	
 
 tests
-	a. add full coverage for torrent_file.py 
+	1. when the tests run not from 'tests' dir all the tests fail! fix it!!!
+	2. add coverege to test_tracker
 
 git
-	a.pull requests to adar
+	a.pull requests to adar V
 

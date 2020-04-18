@@ -46,20 +46,6 @@ def test_udp_request_good_tracker():
     
 
 @valid_internet
-def test_udp_request_not_valid_tracker():
-    #the test check that udp_request cant get http tracker
-    path = _files_list()[3]
-    torrent_file = generate_torrent_file(path)   
-    tracker = torrent_file.trackers[0]
-    peer_manager = Peer_manager()
-    thread = udp_request(tracker, torrent_file, peer_manager)
-    sleep(0.1)
-    assert not thread.is_alive()
-    kill_thread(thread)
-    
-
-
-@valid_internet
 def test_udp_request_tracker_with_no_response():
     path = _files_list()[2]
     torrent_file = generate_torrent_file(path)   
@@ -86,26 +72,6 @@ def test_udp_request_tracker_tracker_from_another_torrent():
     thread = udp_request(tracker_other_torrent, torrent_file, peer_manager)
     sleep(1)
     assert not thread.is_alive()
-    
-
-@valid_internet
-def test_udp_request_http_tracker():
-   path = _files_list()[3]
-   torrent_file = generate_torrent_file(path)
-   peer_manager = Peer_manager()
-   thread = udp_request(torrent_file.trackers[0], torrent_file, peer_manager)
-   sleep(0.1)
-   assert not thread.is_alive()
-   assert thread.result_queue.get().value == 2
-
-
-@valid_internet
-def test_udp_request_recursive_true():
-   path = _files_list()[3]
-   torrent_file = generate_torrent_file(path)
-   peer_manager = Peer_manager()
-   thread = udp_request(torrent_file.trackers[0], torrent_file, peer_manager, recursive=True)
-   assert type(thread) != Thread
 
 
 def test_create_url_for_http_tracker():
@@ -134,13 +100,6 @@ def test_http_request_good_tracker():
     thread = http_request(url, peer_manager)
     sleep(15)
     assert thread.is_alive()
-    assert peer_manager.peers.empty() == False
+    empty_status = peer_manager.peers.empty()
     kill_thread(thread) 
-
-
-
-
-if __name__ == "__main__":
-    test_udp_request_good_tracker()
-
-
+    assert empty_status == False  #first kill the thread the assert chek otherwise the all the pytest stuck

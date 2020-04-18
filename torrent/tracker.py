@@ -1,53 +1,45 @@
 import logging
-from torrent.utilities import run_async, od_get_key
+from torrent.utilities import run_async
 from torrent.bencoding import Decoder
 from urllib.parse import urlencode
 import requests
 from random import randint, randrange
 from time import sleep
-import struct 
+import struct
 import socket
 from enum import Enum
 
 logger = logging.getLogger(__name__)
 
+
 class UdpError(Enum):
     unknown_error = 0
     info_hash = 1
-    not_valid_tracker = 2
     request_error = 3
 
 
-#udp tracker
+#####udp tracker######
 @run_async
-def udp_request(tracker, torrent_file, peer_manager, wait = 0, recursive=False):
-    """ 
-    the function get tracker, torrent_file and peer_manager.
-    the function 
-    wait :
-
+def udp_request(tracker, torrent_file, peer_manager, wait=0, recursive=False):
+    """
     steps:
         1. connection requeset
         2. announcing:
         3. interval announce
-         
         the tracker actions responses:
             0 - connect
             1 - announce
             2 - scrape
             3 - error
     """
-    if tracker.tracker_type != "udp":
-        logger.error(f"udp_request start with not valid tracker: {tracker}")
-        return UdpError.not_valid_tracker
     if wait > 1800:
         wait = 1800
     sleep(wait)
-    #request
+    # request
     logger.debug(f"try to connect {tracker}")
     udp_tracker_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     logger.debug("connect to socket succssed")
-    socket_connecion_request = socket_send_to(udp_tracker_socket, tracker,create_connect_req_struct())
+    socket_connecion_request = socket_send_to(udp_tracker_socket, tracker, create_connect_req_struct())
     if not socket_connecion_request:
         udp_tracker_socket.close()
         udp_request(tracker, torrent_file, peer_manager, (wait + 60) * 2, recursive=True)
@@ -61,11 +53,12 @@ def udp_request(tracker, torrent_file, peer_manager, wait = 0, recursive=False):
     if connection_res == 1:
         return None
     if type(connection_res) == UdpError:
-        return connection_res 
+        return connection_res
     transcation_id, connection_id = connection_res
-    #announce
+    # announce
     while True:
-        socket_announce_request = socket_send_to(udp_tracker_socket, tracker,announcing_req_packet(torrent_file, connection_id))
+        socket_announce_request = socket_send_to(udp_tracker_socket,
+                                                 tracker, announcing_req_packet(torrent_file, connection_id))
         if socket_announce_request == UdpError.request_error:
             udp_tracker_socket.close()
             return UdpError.request_error
@@ -80,28 +73,28 @@ def udp_request(tracker, torrent_file, peer_manager, wait = 0, recursive=False):
             udp_tracker_socket.close()
             return None
         if type(announce_response) == UdpError:
-            return announce_response 
+            return announce_response
         interval, peers = announce_response
-        parsed_peers = parse_peers(peers) 
+        parsed_peers = parse_peers(peers)
         peer_manager.add_peers(parsed_peers)
         logger.info(f"{len(peers)}peers add to peer_manager and go to sleep for {interval} seconds")
         sleep(interval)
 
 
-def  parse_peers(raw_peers):
+def parse_peers(raw_peers):
     parsed_peers = []
     for peer in raw_peers:
         ip = get_ip(struct.pack('>I', peer[0]))
         port = peer[1]
         parsed_peers.append((ip, port))
-    return parsed_peers 
+    return parsed_peers
 
 
 def udp_request_connection_response(sock):
     """
     errors:
         0 = restart
-        1 = kill thread 
+        1 = kill thread
         UdpError
     """
     logger.debug("start connection response")
@@ -110,7 +103,7 @@ def udp_request_connection_response(sock):
         logger.debug("connect to tracker failed")
         return 0
     action = packet_data[0]
-    if action == 3 :
+    if action == 3:
         return _handle_error_action(packet_data[1][0])
     elif action != 0:
         logger.info(f"somthing got worng with response code for connection the action is {action}")
@@ -127,27 +120,26 @@ def socket_send_to(sock, tracker, message):
         return sock.sendto(message, (tracker.url, tracker.port))
     except socket.gaierror:
         logger.debug("error in open socket")
-        return False 
+        return False
     except Exception:
         logger.error("error in send udp announce request", exc_info=True)
         return UdpError.request_error
-       
+
 
 def udp_request_announce_response(sock):
     """
     errors:
         0 = restart
-        1 = kill thread 
+        1 = kill thread
         UdpError
     """
     packet_data = read_response_from_socket(sock)
     if not packet_data:
         logger.debug("announce request failed no answer")
-        return 0 
+        return 0
     action = packet_data[0]
-    if action == 3 :
+    if action == 3:
         return _handle_error_action(packet_data[1][0])
-
     elif action != 1:
         logger.debug(f"somthing got worng with response code for connection the action is {action}")
         return 1
@@ -155,8 +147,9 @@ def udp_request_announce_response(sock):
         transcation_id, interval, leechers, seeders, peers = packet_data[1]
     except ValueError as e:
         logger.error("read_response_from_socket return data not in the format", exc_info=True)
-        return 1 
+        return 1
     return interval, peers
+
 
 def _handle_error_action(error):
     if error == UdpError.info_hash:
@@ -171,54 +164,52 @@ def read_response_from_socket(sock):
         the function get socket that wait from response
         and try recv from socket
         actions:
-            all packet of data start with action 
+            all packet of data start with action
             the function parse the action and parse the data
-
         the return 'action' and list of relevant data for action
         if it failed the function return None
     """
-    #TODO add decorator support from timeout
+    # TODO add decorator support from timeout
     logger.debug("start get action code")
     res, _ = sock.recvfrom(4096)
     action = struct.unpack(">I", res[:4])[0]
     if action == 0:
         logger.debug("connet code got from server")
-        parsed_res = parse_connect_packet(res[4:]) 
+        parsed_res = parse_connect_packet(res[4:])
         if not parsed_res:
             logger.info("parse udp connection response failed")
             return None
-        transcation_id, connection_id = parsed_res 
+        transcation_id, connection_id = parsed_res
         return action, [transcation_id, connection_id]
-
     elif action == 1:
         logger.debug("announce code got from server")
-        parsed_res = parse_announce_packet(res[4:20]) 
+        parsed_res = parse_announce_packet(res[4:20])
         if not parsed_res:
             logger.debug("parse udp announce response failed")
             return None
-        transcation_id, interval, leechers, seeders = parsed_res 
+        transcation_id, interval, leechers, seeders = parsed_res
         peers = get_peers(res[20:])
         return action, [transcation_id, interval, leechers, seeders, peers]
 
     elif action == 3:
-        #TODO support error from _files[4] error from explodie.org:6969 - "uknown option type"
+        # TODO support error from _files[4] error from explodie.org:6969 - "uknown option type"
         error_string = res[8:].decode('utf-8')
         logger.debug(f"error string from server")
         return action, [parse_error_to_code(error_string)]
     else:
         logger.warning(f"response code from server '{code}'")
-        return None 
-        
-    
+        return None
+
+
 def parse_connect_packet(packet):
     if len(packet) != 12:
         logger.info(f"packet length for connection response not match got : {packet}")
         return None
     try:
         req_response = struct.unpack(">LQ", packet)
-    except struct.debug: 
+    except struct.debug:
         logger.info("parse response failed", exc_info=True)
-        return None 
+        return None
     return req_response
 
 
@@ -234,13 +225,9 @@ def parse_announce_packet(packet):
 
 
 def create_connect_req_struct(protocol_id=0X41727101980, transcation_id=randrange(0, 65535), action=0):
-    #the struct for udp tracker request
-    #protocol_id is const, transcation id  is random num , action 0 = connect
-    try:
-        req_struct = struct.pack(">QLL", protocol_id, action, transcation_id)
-    except struct.error:
-        raise Excpetion("the udp req struct creation failed")
-    return req_struct
+    # the struct for udp tracker request
+    # protocol_id is const, transcation id  is random num , action 0 = connect
+    return struct.pack(">QLL", protocol_id, action, transcation_id)
 
 
 def announcing_req_packet(torrent_file, connection_id, left=0, downloaded=0, uploaded=0, event=0):
@@ -256,8 +243,8 @@ def announcing_req_packet(torrent_file, connection_id, left=0, downloaded=0, upl
     except struct.error:
         logger.info("creating packet failed", exc_info=True)
         return None
-    
-     
+
+
 def get_peers(peers):
     peer_list = []
     for peer_pointer in range(0, len(peers), 6):
@@ -265,10 +252,11 @@ def get_peers(peers):
             peer = struct.unpack(">IH", peers[peer_pointer: peer_pointer + 6])
         except struct.error:
             logger.info("somthing get worng with unpack peers data")
-            return peer_list 
+            return peer_list
         peer_list.append(peer)
-    return peer_list 
-    
+    return peer_list
+
+
 def parse_error_to_code(error):
     """
     1 unknown option type - info hash is not available
@@ -279,16 +267,18 @@ def parse_error_to_code(error):
         logger.error(f"unknown error - {error}")
         UdpError.unknown_error
 
-#http functions
+##### http functions #####
+
+
 @run_async
-def http_request(url, peer_manager,wait=0, recursive=False):
+def http_request(url, peer_manager, wait=0, recursive=False):
     if wait > 1800:
         wait = 1800
-    sleep(wait) 
+    sleep(wait)
     while True:
         logger.debug(f"start http tracker request")
         res = None
-        try: 
+        try:
             res = requests.get(url)
         except requests.exceptions.ConnectionError:
             logger.debug("connect to tracker failed")
@@ -306,24 +296,22 @@ def http_request(url, peer_manager,wait=0, recursive=False):
 
 
 def read_http_tracker_response(content):
-    #TODO add support for more exceptions for Decoder
-    #TODO check if we need complete and incomplete
+    # TODO add support for more exceptions for Decoder
+    # TODO check if we need complete and incomplete
     try:
         od = Decoder(content).decode()
     except Exception:
         logger.error("decode http tracker request failed", exc_info=True)
-        return None 
-    if od_get_key(od, b'failure reason'):
-        logger.info("http tracker response with failure reasone")
-        logger.info(od[b'failure reason'])
         return None
-
-    #complete = od_get_key(od, b'complete')
-    #incomplete = od_get_key(od, b'incomplete')
-    interval = od_get_key(od, b'interval', mandat=True)
-    peers = get_peers_data(od_get_key(od, b'peers', mandat=True))
+    if od.get(b'failure reason') is not None:
+        logger.info("http tracker response with failure reasone")
+        logger.info(od['failure reason'])
+        return None
+    interval = od[b'interval']
+    peers = get_peers_data(od[b'peers'])
     return interval, peers
-    
+
+
 def get_peers_data(peers_in_bytes):
     peers = []
     for bytes_pos in range(0, len(peers_in_bytes), 6):
@@ -338,26 +326,25 @@ def get_peers_data(peers_in_bytes):
 
 
 def create_url_for_http_tracker(torrent_file, tracker, left, uploaded=0, downloaded=0, ):
-    #TODO fix to consst (that peer id is alwayz the same peer_id
-    #check that 'left', 'uploaded', 'downloaded' is real data
-    
+    # TODO fix to consst (that peer id is alwayz the same peer_id
+    # check that 'left', 'uploaded', 'downloaded' is real data
     params = {
-    'info_hash': torrent_file.info_hash,
-    'peer_id': torrent_file.peer_id,
-    'port': 6889,
-    'uploaded': uploaded,
-    'downloaded': downloaded,
-    'left': left,
-    'compact': 1,
-    'event' : 'started'#for now hardcode
+        'info_hash': torrent_file.info_hash,
+        'peer_id': torrent_file.peer_id,
+        'port': 6889,
+        'uploaded': uploaded,
+        'downloaded': downloaded,
+        'left': left,
+        'compact': 1,
+        'event': 'started'  # for now hardcode
     }
-    return tracker.http_url() + '?' + urlencode(params)
+    return tracker.http_url + '?' + urlencode(params)
+
 
 def get_ip(ip_address):
     return '.'.join([str(num) for num in ip_address])
 
 
-#request manager
 def tracker_manager(torrent_file, peer_manager):
     tracker_threads = []
     for tracker in torrent_file.trackers:
@@ -367,12 +354,6 @@ def tracker_manager(torrent_file, peer_manager):
         elif tracker.tracker_type == 'udp':
             tracker_threads.append(udp_request(tracker, torrent_file, peer_manager))
         else:
-            #TODO add support to dht protocol
+            # TODO add support to dht protocol
             pass
     return tracker_threads
-        
-
-
-
-if __name__ == "__main__":
-    pass
