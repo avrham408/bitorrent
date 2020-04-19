@@ -1,5 +1,4 @@
-import logging
-import struct
+import logging import struct
 from torrent.networking import open_connection, write, read
 
 logger = logging.getLogger(__name__)
@@ -63,9 +62,6 @@ async def connect_peer(peer):
         peer.close_connection()
         return False
     return True
-
-def _get_have_positions(self, have_bytes):
-    for byte in have_bytes:
 
 
 """
@@ -264,7 +260,7 @@ class Have(Message):
         
 
     def send_bytes(self):
-        return b'0000'
+        raise.Exception("the app not support seeding")
 
     @classmethod
     def parse(cls, data):
@@ -280,15 +276,21 @@ class BitField(Message):
         self.position_genrator = have_position_genrator
 
     def send_bytes(self):
-        return b'0000'
+        raise.Exception("the app not support seeding")
+
+
+    def _parsr_have_positions():
+        for pos in positions 
+            pass 
 
 
     @classmethod
     def parse(cls, data):
         size, message_id = struct.unpack(">IB", peer_response[0:5])
         if message_id == self.message_id: 
-            
-            return cls(piece_index)
+
+
+            return cls()
         return None
     
 
