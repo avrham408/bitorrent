@@ -11,7 +11,7 @@ class PeerConnection():
         self.writer = writer
 
     @classmethod
-    async def open_connection(cls, ip, port)
+    async def open_connection(cls, ip, port):
         try:
             reader, writer = await asyncio.open_connection(ip, port)
         except OSError:
@@ -36,7 +36,7 @@ class PeerConnection():
             try:
                 res = await self.reader.read(message_size)
             except OSError:
-                logger.debug("readering from socket failed")
+                logger.debug("reading from socket failed")
             except Exception:
                 logger.error("reading from server failed with uknown error", exc_info=True)
             if not all_data:
