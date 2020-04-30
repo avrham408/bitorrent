@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class PeerStatus(Enum):
     free = 0
     in_progress = 1
-    fail = 2
+    failed = 2
 
 
 class Peer_manager():
@@ -38,19 +38,19 @@ class Peer_manager():
             self.add_peers(peers)
 
 
-class Peer():
+class Peer:
     def __init__(self, ip, port):
         self.port = port
         self.ip = ip
         self.status = PeerStatus.free
 
-    def open_connection():
+    def open_connection(self):
         self.status = PeerStatus.in_progress
         return self.ip, self.port
 
-    def close_connection():
+    def close_connection(self):
         #True is torrent done and False is connection problem
-        self.status = peerStatus.faile
+        self.status = PeerStatus.failed
 
     def __repr__(self):
         return f"{self.ip}:{self.port}"

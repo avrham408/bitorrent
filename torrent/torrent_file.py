@@ -221,14 +221,15 @@ def get_torrent_data(path):
     file_content = decode_raw_data(file_content)
     torrent_cont['orderd_content'] = file_content
 
-    # get info hash
+    if not torrent_cont['orderd_content']:
+        return False
     torrent_cont['info_hash'] = get_info_hash(file_content)
     if not torrent_cont['info_hash']:
         return False
     # parse_info
     info_parsed = parse_info(file_content[b'info'])
     if not info_parsed:
-        return false
+        return False
     torrent_cont.update(info_parsed)
 
     # trackers

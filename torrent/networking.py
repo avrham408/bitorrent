@@ -23,15 +23,17 @@ class PeerConnection():
 
     async def write(self, message):
         try:
-            self.writer.write(m)
+            self.writer.write(message)
             await self.writer.drain()
+            return True
         except OSError:
             logger.debug(f"writing to socket failed - {message}")
         except Exception:
             logger.error("writing to server failed with uknown error", exc_info=True)
+        return False
 
-    async def read(self, message_size, all_data=False):
-        data = b''
+    async def read(self, message_size=2048, all_data=False):
+        buf = b''
         while True:
             try:
                 res = await self.reader.read(message_size)
@@ -42,9 +44,9 @@ class PeerConnection():
             if not all_data:
                 return res 
             else:
+                buf += res
                 if res == b'':
-                    logger.info("we got empty responses")
+                    logger.debug("we didn't go all data from peer")
                     return False
-                data += res
-                if len(data) >= message_size:
-                    return data
+                if len(buf) >= message_size:
+                    return buf 

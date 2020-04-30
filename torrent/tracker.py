@@ -77,7 +77,7 @@ def udp_request(tracker, torrent_file, peer_manager, wait=0, recursive=False):
         interval, peers = announce_response
         parsed_peers = parse_peers(peers)
         peer_manager.add_peers(parsed_peers)
-        logger.info(f"{len(peers)}peers add to peer_manager and go to sleep for {interval} seconds")
+        logger.info(f" {len(peers)} peers add to peer_manager and go to sleep for {interval} seconds")
         sleep(interval)
 
 

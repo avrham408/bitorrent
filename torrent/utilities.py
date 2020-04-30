@@ -1,4 +1,5 @@
 from queue import Queue
+from torrent.io import get_path
 from threading import Thread
 from collections import OrderedDict
 import logging
@@ -24,6 +25,10 @@ def run_async(f, daemon=False):
         t.result_queue = q
         return t
     return wrap
+
+
+def get_download_path(file_name):
+    return get_path('downloads', file_name)
 
 
 def handle_exception(func, error_message, error_type=Exception, *args, **kwargs):

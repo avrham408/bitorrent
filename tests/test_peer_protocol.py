@@ -34,32 +34,32 @@ def test_parse_handshake():
 
 
 def test_parse_choke():
-    choke_message = Choke.parse(b'\x00\x00\x00\x01\x01')
+    choke_message = Choke.parse(b'\x00\x00\x00\x01\x00')
     assert choke_message
 
 
 def test_choke_send_bytes():
     choke = Choke()
-    assert choke.send_bytes() == b'\x00\x00\x00\x01\x01'
+    assert choke.send_bytes() == b'\x00\x00\x00\x01\x00'
 
 
 def test_parse_choke_not_choke_message():
-    message = b'\x00\x00\x00\x01\x00'
+    message = b'\x00\x00\x00\x01\x01'
     assert Choke.parse(message) == None
 
 
 def test_parse_unchoke():
-    unchoke_message = Unchoke.parse(b'\x00\x00\x00\x01\x00')
+    unchoke_message = Unchoke.parse(b'\x00\x00\x00\x01\x01')
     assert unchoke_message
 
 
 def test_unchoke_send_bytes():
     unchoke = Unchoke()
-    assert unchoke.send_bytes() == b'\x00\x00\x00\x01\x00'
+    assert unchoke.send_bytes() == b'\x00\x00\x00\x01\x01'
 
 
 def test_parse_unchoke_not_unchoke_message():
-    message = b'\x00\x00\x00\x01\x01'
+    message = b'\x00\x00\x00\x01\x00'
     assert Unchoke.parse(message) == None
 
 

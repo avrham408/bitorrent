@@ -4,8 +4,8 @@
     Choke - 0
     Unchoke - 1
     Interested - 2
-    Uninterested - 3
-    Have - 4
+    uninterested - 3
+    have - 4
     BitField - 5
     Request - 6
     Piece - 7
@@ -36,10 +36,16 @@ class Handshake(Message):
 
     def __init__(self, info_hash: bytes, peer_id: str):
         self.info_hash = info_hash
-        self.peer_id = peer_id.encode('utf-8')
+        self.peer_id = self._encode_peer_id(peer_id)
 
     def send_bytes(self):
         return struct.pack('>B19s8x20s20s', 19, self.const_protocol, self.info_hash, self.peer_id)
+
+    def _encode_peer_id(self, peer_id):
+        try:
+            return peer_id.encode('utf-8')
+        except AttributeError:
+            return peer_id
 
     @classmethod
     def parse(cls, data):
@@ -48,7 +54,6 @@ class Handshake(Message):
         except struct.error:
             logger.debug("parse info hash failed")
             return None
-        peer_id = peer_id.decode('utf-8')
         return cls(info_hash, peer_id)
 
 
@@ -71,7 +76,7 @@ class Keep_Alive(Message):
 
 class Choke(Message):
 
-    message_id = 1
+    message_id = 0
 
     def __init__(self):
         pass
@@ -89,7 +94,7 @@ class Choke(Message):
 
 
 class Unchoke(Message):
-    message_id = 0
+    message_id = 1
 
     def __init__(self):
         pass
