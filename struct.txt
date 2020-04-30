@@ -1,0 +1,13 @@
+MAIN STRUCT:
+
+
+	1. get torrent_file
+	2. parse torrent file and create Torrent_file object
+	3. create piece manager
+
+	loop:
+	3. tracker request add peers - async
+	4. peer requests - async
+		4.1 ask from piece manager for piece data
+		4.2 valid piece
+		4.3 again
