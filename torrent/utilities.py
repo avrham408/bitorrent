@@ -31,9 +31,19 @@ def get_download_path(file_name):
     return get_path('downloads', file_name)
 
 
+def get_torrent_files_path(file_name):
+    return get_path('torrent_files', file_name)
+
+
 def handle_exception(func, error_message, error_type=Exception, *args, **kwargs):
     try:
         return func(*args, **kwargs)
     except error_type:
         logger.debug(error_message)
         return False
+
+
+def close_thread(thread):
+    if thread.is_alive():
+        thread._tstate_lock.release()
+        thread._stop()

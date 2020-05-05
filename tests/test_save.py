@@ -29,6 +29,7 @@ def test_create_single_file_0_size():
     with pytest.raises(OSError):
         test_path_name = 'test_name_for_0_size'
         create_single_file(test_path_name, 0)
+    delete_file(os.path.join(DIR_NAME, 'downloads', test_path_name))
 
 
 def test_save_torrent_file():
@@ -52,4 +53,4 @@ def test_save_torrent_file_data_the_same():
 
 
 if __name__ == "__main__":
-    test_save_torrent_file_data_the_same()
+    test_create_single_file_0_size()

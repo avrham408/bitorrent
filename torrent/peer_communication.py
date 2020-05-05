@@ -20,7 +20,11 @@ async def read_message(peer_connection):
         logger.info("parse message and size failed")
         return False
     if message_size > 1:
-        pack += await peer_connection.read(message_size - 1, all_data=True)
+        try:
+            pack += await peer_connection.read(message_size - 1, all_data=True)
+        except TypeError:
+            logger.error(exc_info=True)
+            return False
     return message_type_switch(message_type).parse(pack)
 
 
@@ -103,7 +107,7 @@ async def get_choking_status(peer_connection):
 
 async def get_pieces(peer_connection, piece_manager, bitfield):
     while True:
-        piece = await piece_manager.get_piece() #TODO handle bitfield check if peer have piece 
+        piece = await piece_manager.get_piece()
         if not piece:
             # all the pieces in proccess
             return False
@@ -174,8 +178,3 @@ async def peer_to_peer_communication(peer, torrent_file, piece_manager):
     if not await get_pieces(peer_connection, piece_manager, bitfield):
         return close_connection(peer)
     logger.debug("get choke status pass")
-
-def gather_peers(peer_manager, piece_manager, torrent_file):
-    # TODO handle peer_manager get peers
-    asyncio.gather(*[peer_to_peer_communication(peer, torrent_file, piece_manager) for peer in peer_manager._peer_list if peer.status.value == 0])
-

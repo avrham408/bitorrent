@@ -27,10 +27,10 @@ class Piece:
     def piece_done(self):
         validation = self.piece_hash ==  sha1(b''.join(self.blocks)).digest()
         if validation:
-            logger.info(f'piece {self.index} is valid')
+            logger.debug(f'piece {self.index} is valid')
             self.set_status(PieceStatus.done)
         else:
-            logger.debug(f'piece {self.index} is not valid')
+            logger.info(f'piece {self.index} is not valid')
             self.reset_piece()
         return validation
 
@@ -50,7 +50,7 @@ class Piece:
         self.status = status
 
     def piece_written(self):
-        self.status = PieceStatus.written
+        self.set_status(PieceStatus.written)
         self.blocks = []
     
     def __repr__(self):
@@ -77,8 +77,9 @@ class Piece_Manager:
         statuses = list(map(lambda piece: piece.status, self.pieces))
         free = statuses.count(PieceStatus.free)
         done = statuses.count(PieceStatus.done)
-        in_progress = self.pieces.count(PieceStatus.in_progress)
-        return {PieceStatus.free: free, PieceStatus.done: done, PieceStatus.in_progress: in_progress}
+        in_progress = statuses.count(PieceStatus.in_progress)
+        written = statuses.count(PieceStatus.written)
+        return {PieceStatus.free: free, PieceStatus.done: done, PieceStatus.in_progress: in_progress, PieceStatus.written:written}
 
     async def get_piece(self):
         while True:
@@ -96,6 +97,13 @@ class Piece_Manager:
 
     async def put_in_queue(self, piece):
         await self.done_queue.put(piece)
+
+
+    def all_pieces_done(self):
+        pieces_status = self.pieces_status() 
+        if pieces_status[PieceStatus.written] == len(self.pieces):
+            return True
+        
 
     def __repr__(self):
         return f'piece_manager{self.pieces_status()}'

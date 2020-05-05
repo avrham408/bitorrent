@@ -1,8 +1,10 @@
 import asyncio
 import struct
 import logging
+import concurrent.futures
 
 logger = logging.getLogger(__name__)
+TIMEOUT = 30
 
 
 class PeerConnection():
@@ -36,9 +38,13 @@ class PeerConnection():
         buf = b''
         while True:
             try:
-                res = await self.reader.read(message_size)
+                res = await asyncio.wait_for(self.reader.read(message_size), timeout=TIMEOUT)
             except OSError:
                 logger.debug("reading from socket failed")
+                return False
+            except concurrent.futures._base.TimeoutError:
+                logge.info("reading get to timeout")
+                return False
             except Exception:
                 logger.error("reading from server failed with uknown error", exc_info=True)
             if not all_data:

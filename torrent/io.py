@@ -33,8 +33,12 @@ def get_path(*args, base=MODULE_PATH):
     if base:
         return os.path.join(base, *args)
     else:
-        return os.path.join(*args)
-
-
+        return os.path.join(*args) 
 def copy_file(src, dest):
     shutil.copy(src, dest)
+
+
+def read_from_disk(fd, size, seek_position=False):
+    if seek_position:
+        os.lseek(fd, seek_position,os.SEEK_SET)
+    return os.read(fd, size)
