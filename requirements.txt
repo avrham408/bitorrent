@@ -1,0 +1,8 @@
+requests==2.22.0
+pytest==5.2.1
+urllib3==1.25.7
+pytest-asyncio==0.10.0
+tqdm==4.46.0
+bitarray==1.2.1
+aiofiles==0.5.0
+system-service==0.3
