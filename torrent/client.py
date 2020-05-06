@@ -3,7 +3,7 @@ from torrent.pieces import create_piece_manager
 from torrent.peer import Peer_manager
 from torrent.tracker import tracker_manager
 from torrent.peer_communication import peer_to_peer_communication
-from torrent.save import torrent_file_exist, load, write_pieces_to_memory, file_genrator 
+from torrent.save import torrent_file_exist, load, write_pieces_to_memory, file_genrator, make_env
 from torrent.async_handler import get_loop, run_async_task
 from torrent.utilities import close_thread
 from torrent.status_interface import run_tqdm
@@ -19,6 +19,7 @@ SLEEP_BETWEEN_LOOP = 3
 
 
 def create_or_load_torrent_file(path:str):
+    make_env()
     if torrent_file_exist(path):
         try:
             torrent_file, piece_manager = load(path)
@@ -33,10 +34,10 @@ def create_or_load_torrent_file(path:str):
 
 async def close_client(loop, tracker_threads, piece_manager):
     await piece_manager.put_in_queue(None)
-    loop.stop()
     for thread in tracker_threads:
         close_thread(thread)
     logger.info("proccess closed successfuly")
+    loop.stop()
 
 
 def create_client(torrent_path:str):

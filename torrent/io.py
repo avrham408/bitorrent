@@ -42,3 +42,11 @@ def read_from_disk(fd, size, seek_position=False):
     if seek_position:
         os.lseek(fd, seek_position,os.SEEK_SET)
     return os.read(fd, size)
+
+
+def make_dir(path):
+    os.mkdir(path)
+
+
+def delete_file(path):
+    os.remove(path)

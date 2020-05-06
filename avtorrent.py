@@ -13,7 +13,7 @@ def main(argv):
         try:
             loop.run_until_complete(run_client(torrent_file, piece_manager, tracker_threads, peer_manager, loop))
         except KeyboardInterrupt:
-            close_client(loop, tracker_threads, piece_manager)
+            loop.run_until_complete(close_client(loop, tracker_threads, piece_manager))
 
 
 if __name__ == "__main__":

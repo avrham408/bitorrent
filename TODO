@@ -1,9 +1,1 @@
-1.io manager - support one file without saving
-	steps:
-		a - save torrent_file in torrent_file directory V
-		b - create file in downloads V
-		
-2.io manager - support one file with saving
-3.io manager - support multi file without saving
-4.io manager - support multi file with saving
-
+add progress bar for peers
