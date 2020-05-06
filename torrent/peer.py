@@ -56,7 +56,7 @@ class Peer_manager():
         statuses_dic[PeerStatus.in_progress.name] = statuses.count(PeerStatus.in_progress)
         statuses_dic[PeerStatus.failed.name] = statuses.count(PeerStatus.failed)
         return statuses_dic
-
+    
 
 class Peer:
     def __init__(self, ip, port):

@@ -26,10 +26,13 @@ class PeerConnection():
     async def write(self, message):
         try:
             self.writer.write(message)
-            await self.writer.drain()
+            await asyncio.wait_for(self.writer.drain(), timeout=TIMEOUT)
             return True
         except OSError:
             logger.debug(f"writing to socket failed - {message}")
+        except concurrent.futures._base.TimeoutError:
+            logger.warning("reading get to timeout")
+            return False
         except Exception:
             logger.error("writing to server failed with uknown error", exc_info=True)
         return False
@@ -43,10 +46,10 @@ class PeerConnection():
                 logger.debug("reading from socket failed")
                 return False
             except concurrent.futures._base.TimeoutError:
-                logge.info("reading get to timeout")
+                logger.warning("reading get to timeout")
                 return False
             except Exception:
-                logger.error("reading from server failed with uknown error", exc_info=True)
+                logger.info("reading from server failed with uknown error", exc_info=True)
             if not all_data:
                 return res 
             else:

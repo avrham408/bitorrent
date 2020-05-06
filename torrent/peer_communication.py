@@ -12,6 +12,8 @@ RESTART_PEER_TIME = 60 * 7.5
 
 async def read_message(peer_connection):
     pack = await peer_connection.read(5)
+    if not pack:
+        return False
     if len(pack) == 4:
         return Keep_Alive()
     try:
@@ -23,7 +25,6 @@ async def read_message(peer_connection):
         try:
             pack += await peer_connection.read(message_size - 1, all_data=True)
         except TypeError:
-            logger.error(exc_info=True)
             return False
     return message_type_switch(message_type).parse(pack)
 

@@ -291,7 +291,7 @@ def http_request(url, peer_manager, wait=0, recursive=False):
             return http_request(url, peer_manager, wait + 30 * 2)
         interval, peers = parsed_res
         peer_manager.add_peers(peers)
-        logger.info(f"peers add to peer_manager and go to sleep for {interval} seconds")
+        logger.info(f"{len(peers)} peers add to peer_manager and go to sleep for {interval} seconds")
         sleep(int(interval / 5))
 
 

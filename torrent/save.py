@@ -47,6 +47,7 @@ async def write_pieces_to_memory(torrent_file, done_queue):
         except Exception:
             logger.error("write to disc failed", exc_info=True)
             return False
+        torrent_file
     close_file(fd)
     logger.info("write pieces to memory closed") 
 

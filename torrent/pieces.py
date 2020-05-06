@@ -98,12 +98,13 @@ class Piece_Manager:
     async def put_in_queue(self, piece):
         await self.done_queue.put(piece)
 
+    def get_pieces_written(self):
+        return self.pieces_status()[PieceStatus.written]
 
     def all_pieces_done(self):
         pieces_status = self.pieces_status() 
         if pieces_status[PieceStatus.written] == len(self.pieces):
             return True
-        
 
     def __repr__(self):
         return f'piece_manager{self.pieces_status()}'
