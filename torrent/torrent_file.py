@@ -6,6 +6,7 @@ from os.path import isfile
 from urllib.parse import urlsplit
 from random import randint
 
+
 logger = logging.getLogger(__name__)
 
 #####classes#####
@@ -40,7 +41,7 @@ class Tracker():
     url(domain):str, path:str, type:'http' or 'udp, port:'int'
     """
 
-    def __init__(self, tracker_type, url, path,  port=80):
+    def __init__(self, tracker_type, url, path, port=80):
         self.schema = tracker_type
         self.url = url
         self.path = path
@@ -176,7 +177,7 @@ def create_tracker(url):
     if protocol not in ['udp', 'http', 'https']:
         logger.warning(f'the trackers {url} not conatin protocol')
         return None
-    if ':' not in netloc: 
+    if ':' not in netloc:
         url = netloc
         if protocol == 'http':
             port = 80
@@ -221,14 +222,15 @@ def get_torrent_data(path):
     file_content = decode_raw_data(file_content)
     torrent_cont['orderd_content'] = file_content
 
-    # get info hash
+    if not torrent_cont['orderd_content']:
+        return False
     torrent_cont['info_hash'] = get_info_hash(file_content)
     if not torrent_cont['info_hash']:
         return False
     # parse_info
     info_parsed = parse_info(file_content[b'info'])
     if not info_parsed:
-        return false
+        return False
     torrent_cont.update(info_parsed)
 
     # trackers
