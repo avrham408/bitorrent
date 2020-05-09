@@ -76,7 +76,6 @@ async def get_and_parse_handshake(peer_connection, recursive=True):
         return await get_and_parse_handshake(peer_connection, False)
 
 
-
 async def get_and_parse_bitfield(peer_connection):
     # TODO handle Have messages
     bitfield = await read_message(peer_connection)

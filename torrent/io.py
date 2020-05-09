@@ -8,14 +8,14 @@ MODULE_PATH = os.path.dirname(torrent.__path__[0])
 
 
 def write_to_disc(fd, block_data, seek_position):
-    os.lseek(fd, seek_position,os.SEEK_SET)
+    os.lseek(fd, seek_position, os.SEEK_SET)
     os.write(fd, block_data)
 
 
 def open_file(path):
     # the function return fd
     return os.open(path, os.O_RDWR)
-   
+
 
 def close_file(fd):
     os.close(fd)
@@ -33,14 +33,16 @@ def get_path(*args, base=MODULE_PATH):
     if base:
         return os.path.join(base, *args)
     else:
-        return os.path.join(*args) 
+        return os.path.join(*args)
+
+
 def copy_file(src, dest):
     shutil.copy(src, dest)
 
 
 def read_from_disk(fd, size, seek_position=False):
     if seek_position:
-        os.lseek(fd, seek_position,os.SEEK_SET)
+        os.lseek(fd, seek_position, os.SEEK_SET)
     return os.read(fd, size)
 
 

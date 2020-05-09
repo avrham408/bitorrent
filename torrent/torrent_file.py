@@ -41,7 +41,7 @@ class Tracker():
     url(domain):str, path:str, type:'http' or 'udp, port:'int'
     """
 
-    def __init__(self, tracker_type, url, path,  port=80):
+    def __init__(self, tracker_type, url, path, port=80):
         self.schema = tracker_type
         self.url = url
         self.path = path
@@ -177,7 +177,7 @@ def create_tracker(url):
     if protocol not in ['udp', 'http', 'https']:
         logger.warning(f'the trackers {url} not conatin protocol')
         return None
-    if ':' not in netloc: 
+    if ':' not in netloc:
         url = netloc
         if protocol == 'http':
             port = 80

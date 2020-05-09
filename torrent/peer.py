@@ -51,12 +51,12 @@ class Peer_manager():
 
     def map_status(self):
         statuses = list(map(lambda peer: peer.status, self.peer_list))
-        statuses_dic = dict() 
+        statuses_dic = dict()
         statuses_dic[PeerStatus.free.name] = statuses.count(PeerStatus.free)
         statuses_dic[PeerStatus.in_progress.name] = statuses.count(PeerStatus.in_progress)
         statuses_dic[PeerStatus.failed.name] = statuses.count(PeerStatus.failed)
         return statuses_dic
-    
+
 
 class Peer:
     def __init__(self, ip, port):
@@ -69,7 +69,6 @@ class Peer:
         return self.ip, self.port
 
     def close_connection(self):
-        #True is torrent done and False is connection problem
         self.status = PeerStatus.failed
 
     def __hash__(self):

@@ -9,11 +9,12 @@ import asyncio
 
 logger = logging.getLogger(__name__)
 
-def make_env(): 
+
+def make_env():
     handle_env_dirs(get_path('downloads'))
     handle_env_dirs(get_path('torrent_files'))
     logger.debug('env created')
-        
+
 
 def handle_env_dirs(dir_path):
     if not os.path.isdir(dir_path):
@@ -24,8 +25,8 @@ def handle_env_dirs(dir_path):
 
 
 def create_single_file(torrent_name, torrent_size):
-    path = get_download_path(torrent_name) 
-    create_file(path, torrent_size) 
+    path = get_download_path(torrent_name)
+    create_file(path, torrent_size)
 
 
 def save_torrent_file(src_path):
@@ -43,7 +44,7 @@ def create_multi_file(torrent_file):
         create_file_and_file_path(torrent_dir_name, file_data)
 
 
-def create_file_and_file_path(torrent_dir_name:str, file_data:dict):
+def create_file_and_file_path(torrent_dir_name: str, file_data: dict):
     """
         the function get file_data that came from the torrent file
         the dict contain the length in bytes and all the path of the seprate in list.
@@ -55,7 +56,7 @@ def create_file_and_file_path(torrent_dir_name:str, file_data:dict):
     for pos in file_data['path'][:-1]:
         path = os.path.join(path, pos.decode())
         if not os.path.exists(path):
-             make_dir(path)
+            make_dir(path)
     path = os.path.join(path, file_data['path'][-1].decode())
     create_file(path, size)
 
@@ -75,7 +76,7 @@ async def write_pieces_to_memory(torrent_file, piece_manager):
         await handle_writing_to_multi_file(torrent_file, piece_manager)
     else:
         await handle_writing_to_single_file(torrent_file, piece_manager.done_queue)
-    logger.info("write pieces to memory closed") 
+    logger.info("write pieces to memory closed")
 
 
 async def handle_writing_to_multi_file(torrent_file, piece_manager):
@@ -88,7 +89,7 @@ async def handle_writing_to_multi_file(torrent_file, piece_manager):
         files_list = pieces_positions_in_files[piece]
         if not write_piece_to_multi_files(piece, files_list, torrent_file.name):
             break
-            
+
 
 def parse_and_get_abs_path(torrent_dir, undecode_postions_list):
     base_path = os.path.join(*[pos_name.decode() for pos_name in undecode_postions_list])
@@ -104,7 +105,7 @@ def write_piece_to_multi_files(piece, files_list, torrent_dir_name):
         abs_path = parse_and_get_abs_path(torrent_dir_name, file_data[0])
         fd = open_file(abs_path)
         try:
-            write_to_disc(fd, piece_data[seek_in_piece: seek_in_piece + file_data[2]],file_data[1])
+            write_to_disc(fd, piece_data[seek_in_piece: seek_in_piece + file_data[2]], file_data[1])
         except Exception:
             close_file(fd)
             logger.error("write to disc failed", exc_info=True)
@@ -115,9 +116,9 @@ def write_piece_to_multi_files(piece, files_list, torrent_dir_name):
     return True
 
 
-def create_map_for_pieces(files:list, pieces:list): 
+def create_map_for_pieces(files: list, pieces: list):
     positions_map = dict()
-    files_gen = (file_in_torrent for file_in_torrent in files) #genrator of files
+    files_gen = (file_in_torrent for file_in_torrent in files)  # genrator of files
     file_data = next(files_gen)
     current_seek_in_current_file = 0
     for piece in pieces:
@@ -125,14 +126,16 @@ def create_map_for_pieces(files:list, pieces:list):
         current_seek_in_piece = 0
         while True:
             if piece.length - current_seek_in_piece > file_data['length'] - current_seek_in_current_file:
-                current_seek_in_piece += file_data['length'] - current_seek_in_current_file 
+                current_seek_in_piece += file_data['length'] - current_seek_in_current_file
                 bytes_size_to_write_on_file = file_data['length'] - current_seek_in_current_file
-                positions_map[piece].append([file_data['path'], current_seek_in_current_file, bytes_size_to_write_on_file]) 
-                #moving_to_the_next_file
+                positions_map[piece].append([file_data['path'], current_seek_in_current_file, bytes_size_to_write_on_file])
+                # moving_to_the_next_file
                 file_data = next(files_gen)
                 current_seek_in_current_file = 0
             else:
-                positions_map[piece].append([file_data['path'], current_seek_in_current_file , piece.length - current_seek_in_piece])
+                positions_map[piece].append([file_data['path'],
+                        current_seek_in_current_file,
+                        piece.length - current_seek_in_piece])
                 current_seek_in_current_file += piece.length - current_seek_in_piece
                 break
     return positions_map
@@ -154,9 +157,10 @@ async def handle_writing_to_single_file(torrent_file, queue):
     logger.info(f"the fd num is {fd}")
     while True:
         piece = await queue.get()
-        if not piece or not write_piece_to_file(fd, piece, piece_size): # push None in the queue to kill the proccess properly
+        if not piece or not write_piece_to_file(fd, piece, piece_size):  # push None in the queue to kill the proccess properly
             close_file(fd)
-            break 
+            break
+
 
 def load_torrent_file(path):
     if os.path.isfile(path):
@@ -193,12 +197,13 @@ def load_single_file(file_path, piece_manager):
 
 
 def load_multi_file(dir_path, piece_manager, torrent_file):
-    pieces_positions_in_files  = create_map_for_pieces(torrent_file.files, piece_manager.pieces)
+    pieces_positions_in_files = create_map_for_pieces(torrent_file.files, piece_manager.pieces)
     for piece, files_data in pieces_positions_in_files.items():
         for file_data in files_data:
             read_piece_for_multi_file(file_data, piece, dir_path)
         if piece.piece_done():
             piece.piece_written()
+
 
 def read_piece_for_multi_file(file_data, piece, dir_path):
     file_path, seek_position, size = file_data
@@ -209,6 +214,6 @@ def read_piece_for_multi_file(file_data, piece, dir_path):
     close_file(fd)
 
 
-def torrent_file_exist(path:str):
+def torrent_file_exist(path: str):
     torrent_files_path = get_torrent_files_path(os.path.basename(path))
     return os.path.isfile(torrent_files_path)
