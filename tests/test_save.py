@@ -1,5 +1,8 @@
-from torrent.save import create_single_file, save_torrent_file, get_download_path, file_genrator, write_pieces_to_memory
+from torrent.save import create_single_file, save_torrent_file, get_download_path, file_genrator, write_pieces_to_memory \
+    , create_map_for_pieces
 import pytest
+from torrent.torrent_file import generate_torrent_file  
+from torrent.pieces import create_piece_manager
 import torrent
 from utilities import delete_file, _files_list
 import random
@@ -52,5 +55,40 @@ def test_save_torrent_file_data_the_same():
         delete_file(new_torrent_file_path)
 
 
-if __name__ == "__main__":
-    test_create_single_file_0_size()
+def test_pieces_map_total_size():
+    # the funtion test create_writing_map_for_pieces get all length of data 
+    # that going to write for all piece and check that the total data is equal to torrent_file.length
+    for path in _files_list():
+        torrent_file = generate_torrent_file(path)
+        if not torrent_file.multi_file:
+            continue
+        piece_manager = create_piece_manager(torrent_file)
+        map_dict = create_map_for_pieces(torrent_file.files, piece_manager.pieces)
+        assert type(map_dict) is dict
+        total_size = 0
+        for piece, files in map_dict.items():
+            total_for_piece = 0
+            for file_data in files:
+                total_for_piece += file_data[2]
+                total_size += file_data[2]
+            assert piece.length == total_for_piece
+        assert torrent_file.length == total_size
+
+
+def test_pieces_map_split_pieces_data():
+    # this test is not realy smart or dynamic but it help to know
+    # that nothing broked
+    path = _files_list()[1]
+    torrent_file = generate_torrent_file(path)
+    piece_manager = create_piece_manager(torrent_file)
+    pieces_map = create_map_for_pieces(torrent_file.files, piece_manager.pieces)
+    piece = piece_manager.pieces[0]
+    files_for_piece = pieces_map[piece]
+    assert len(files_for_piece) == 5
+    for data in files_for_piece:
+        assert data[1] == 0
+    piece = piece_manager.pieces[839]
+    files_for_piece = pieces_map[piece]
+    assert len(files_for_piece) == 2
+    assert files_for_piece[0][1] != 0
+    assert files_for_piece[1][1] == 0

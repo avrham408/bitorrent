@@ -31,7 +31,7 @@ LOGGING_CONFIG = {
     },
     'loggers': {
         "": {
-            "level": "INFO",
+            "level": "DEBUG",
             "handlers": ["default", "file_handler"]
         }
     }

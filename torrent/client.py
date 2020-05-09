@@ -7,6 +7,7 @@ from torrent.save import torrent_file_exist, load, write_pieces_to_memory, file_
 from torrent.async_handler import get_loop, run_async_task
 from torrent.utilities import close_thread
 from torrent.status_interface import run_tqdm
+import sys
 import asyncio
 import logging
 
@@ -14,7 +15,6 @@ import logging
 logger = logging.getLogger(__name__)
 MAX_PEERS = 50
 SLEEP_BETWEEN_LOOP = 3
-
 
 
 
@@ -27,6 +27,8 @@ def create_or_load_torrent_file(path:str):
             raise Exception("loading torrent file failed")
     else:
         torrent_file = generate_torrent_file(path) 
+        if not torrent_file:
+            return sys.exit(1)
         file_genrator(torrent_file)
         piece_manager= create_piece_manager(torrent_file) 
     return torrent_file, piece_manager
@@ -43,7 +45,7 @@ async def close_client(loop, tracker_threads, piece_manager):
 def create_client(torrent_path:str):
     loop = get_loop()
     torrent_file, piece_manager = create_or_load_torrent_file(torrent_path)
-    run_async_task(loop, write_pieces_to_memory(torrent_file, piece_manager.done_queue))
+    run_async_task(loop, write_pieces_to_memory(torrent_file, piece_manager))
     peer_manager = Peer_manager()
     tracker_threads = tracker_manager(torrent_file, peer_manager)
     return torrent_file, piece_manager, tracker_threads, peer_manager, loop
@@ -62,3 +64,6 @@ async def run_client(torrent_file, piece_manager, tracker_threads, peer_manager,
             await close_client(loop, tracker_threads, piece_manager)
             break
         await asyncio.sleep(SLEEP_BETWEEN_LOOP)
+        if timeing % 5 == 0:
+            logger.info(peer_manager.map_status())
+            logger.info(piece_manager)

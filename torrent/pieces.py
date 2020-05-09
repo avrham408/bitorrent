@@ -90,8 +90,8 @@ class Piece_Manager:
                         piece.set_status(PieceStatus.in_progress)
                         self.lock = False
                         return piece
-                return None
                 self.lock = False
+                return None 
             else:
                 await asyncio.sleep(1)
 
