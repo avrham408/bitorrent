@@ -9,9 +9,10 @@ import asyncio
 
 logger = logging.getLogger(__name__)
 
+
 def create_single_file(torrent_name, torrent_size):
-    path = get_download_path(torrent_name) 
-    create_file(path, torrent_size) 
+    path = get_download_path(torrent_name)
+    create_file(path, torrent_size)
 
 
 def save_torrent_file(src_path):
@@ -26,7 +27,7 @@ def file_genrator(torrent_file):
     else:
         try:
             create_single_file(torrent_file.name, torrent_file.length)
-        except OSError: # file size is 0
+        except OSError:  # file size is 0
             return False
     logger.info('file created and torrent file saved')
     return True
@@ -49,7 +50,7 @@ async def write_pieces_to_memory(torrent_file, done_queue):
             return False
         torrent_file
     close_file(fd)
-    logger.info("write pieces to memory closed") 
+    logger.info("write pieces to memory closed")
 
 
 def load_torrent_file(path):
@@ -77,6 +78,6 @@ def load(torrent_path):
     return torrent_file, piece_manager
 
 
-def torrent_file_exist(path:str):
+def torrent_file_exist(path: str):
     torrent_files_path = get_torrent_files_path(os.path.basename(path))
     return os.path.isfile(torrent_files_path)

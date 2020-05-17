@@ -7,10 +7,11 @@ logger = logging.getLogger(__name__)
 
 
 class PieceStatus(Enum):
-    free = 0 
+    free = 0
     in_progress = 1
     done = 2
-    written = 3 
+    written = 3
+
 
 class Piece:
     """The piece object reprsent one piece from pieces in the info of torrent file
@@ -25,7 +26,7 @@ class Piece:
         self.status = PieceStatus.free
 
     def piece_done(self):
-        validation = self.piece_hash ==  sha1(b''.join(self.blocks)).digest()
+        validation = self.piece_hash == sha1(b''.join(self.blocks)).digest()
         if validation:
             logger.debug(f'piece {self.index} is valid')
             self.set_status(PieceStatus.done)
@@ -52,7 +53,7 @@ class Piece:
     def piece_written(self):
         self.set_status(PieceStatus.written)
         self.blocks = []
-    
+
     def __repr__(self):
         return f"{self.index}:{self.status.name}"
 
@@ -79,7 +80,7 @@ class Piece_Manager:
         done = statuses.count(PieceStatus.done)
         in_progress = statuses.count(PieceStatus.in_progress)
         written = statuses.count(PieceStatus.written)
-        return {PieceStatus.free: free, PieceStatus.done: done, PieceStatus.in_progress: in_progress, PieceStatus.written:written}
+        return {PieceStatus.free: free, PieceStatus.done: done, PieceStatus.in_progress: in_progress, PieceStatus.written: written}
 
     async def get_piece(self):
         while True:
@@ -102,7 +103,7 @@ class Piece_Manager:
         return self.pieces_status()[PieceStatus.written]
 
     def all_pieces_done(self):
-        pieces_status = self.pieces_status() 
+        pieces_status = self.pieces_status()
         if pieces_status[PieceStatus.written] == len(self.pieces):
             return True
 
