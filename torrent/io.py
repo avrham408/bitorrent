@@ -29,7 +29,7 @@ def create_file(path, size):
 
 
 def get_path(*args, base=MODULE_PATH):
-    # if you want create_path that not connect to module path just path=False
+    # if you want create_path that not connect to module path just base=False
     if base:
         return os.path.join(base, *args)
     else:

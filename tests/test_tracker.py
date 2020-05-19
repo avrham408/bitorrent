@@ -40,7 +40,7 @@ def test_udp_request_good_tracker():
             valid_tracker = tracker
 
     thread = udp_request(valid_tracker, torrent_file, peer_manager) 
-    sleep(15) 
+    sleep(30) 
     assert peer_manager.peers.empty() == False
     kill_thread(thread)
     

@@ -60,9 +60,6 @@ class Handshake(Message):
 class Keep_Alive(Message):
     message_id = None
 
-    def __init__(self):
-        pass
-
     def send_bytes(self):
         return b'0000'
 
@@ -75,11 +72,7 @@ class Keep_Alive(Message):
 
 
 class Choke(Message):
-
     message_id = 0
-
-    def __init__(self):
-        pass
 
     def send_bytes(self):
         return struct.pack('>IB', 1, self.message_id)
@@ -96,9 +89,6 @@ class Choke(Message):
 class Unchoke(Message):
     message_id = 1
 
-    def __init__(self):
-        pass
-
     def send_bytes(self):
         return struct.pack('>IB', 1, self.message_id)
 
@@ -114,9 +104,6 @@ class Unchoke(Message):
 class Interested(Message):
     message_id = 2
 
-    def __init__(self):
-        pass
-
     def send_bytes(self):
         return struct.pack('>IB', 1, self.message_id)
 
@@ -131,9 +118,6 @@ class Interested(Message):
 
 class Uninterested(Message):
     message_id = 3
-
-    def __init__(self):
-        pass
 
     def send_bytes(self):
         return struct.pack('>IB', 1, self.message_id)
