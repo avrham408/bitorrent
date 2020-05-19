@@ -1,5 +1,6 @@
 import requests
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 TEST_FILES_DIR = 'test_files/' 
@@ -43,3 +44,30 @@ def kill_thread(t):
     if t.is_alive():
         t._tstate_lock.release()
         t._stop()
+
+
+def delete_file(src, assert_exception=False):
+    if assert_exception:
+        try:
+            os.remove(src)
+        except FileNotFoundError:
+            assert False #file not found for deletion
+    else:
+        try:
+            os.remove(src)
+        except FileNotFoundError:
+            pass
+
+def timeit(method):
+    def timed(*args, **kw):
+        ts = time.time()
+        result = method(*args, **kw)
+        te = time.time()
+        if 'log_time' in kw:
+            name = kw.get('log_name', method.__name__.upper())
+            kw['log_time'][name] = int((te - ts) * 1000)
+        else:
+            print('%r  %2.2f ms' % \
+                  (method.__name__, (te - ts) * 1000))
+        return result
+    return timed

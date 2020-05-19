@@ -14,7 +14,7 @@ LOGGING_CONFIG = {
     },
     'handlers': {
         'default': {
-            'level': 'WARNING',
+            'level': 'ERROR',
             'formatter': 'simple',
             'class': 'logging.StreamHandler',
             'stream': 'ext://sys.stdout',  # Default is stde
@@ -31,7 +31,7 @@ LOGGING_CONFIG = {
     },
     'loggers': {
         "": {
-            "level": "INFO",
+            "level": "WARNING",
             "handlers": ["default", "file_handler"]
         }
     }

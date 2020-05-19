@@ -10,9 +10,10 @@ class PieceStatus(Enum):
     free = 0
     in_progress = 1
     done = 2
+    written = 3
 
 
-class Piece():
+class Piece:
     """The piece object reprsent one piece from pieces in the info of torrent file
     all piece in size of piece length fro torrent file hoz me except from the last piece
     the piece come with info hash of 20 bytes in sha1 and if the piece data the came
@@ -27,12 +28,15 @@ class Piece():
     def piece_done(self):
         validation = self.piece_hash == sha1(b''.join(self.blocks)).digest()
         if validation:
-            logger.info(f'piece {self.index} is valid')
+            logger.debug(f'piece {self.index} is valid')
             self.set_status(PieceStatus.done)
         else:
-            logger.debug(f'piece {self.index} is not valid')
+            logger.info(f'piece {self.index} is not valid')
             self.reset_piece()
         return validation
+
+    def get_blocks(self):
+        return b''.join(self.blocks)
 
     def reset_piece(self):
         logger.debug(f"we lost a piece in index {self.index}")
@@ -46,11 +50,15 @@ class Piece():
     def set_status(self, status: PieceStatus):
         self.status = status
 
+    def piece_written(self):
+        self.set_status(PieceStatus.written)
+        self.blocks = []
+
     def __repr__(self):
         return f"{self.index}:{self.status.name}"
 
 
-class Piece_Manager():
+class Piece_Manager:
     """
         the class purpose is to manage the connection from piece to the place in
         the memory on file. for now it only a list with data
@@ -58,6 +66,7 @@ class Piece_Manager():
     def __init__(self):
         self.pieces = []
         self.lock = False
+        self.done_queue = asyncio.Queue()
 
     def add_piece(self, piece):
         if type(piece) != Piece:
@@ -69,8 +78,9 @@ class Piece_Manager():
         statuses = list(map(lambda piece: piece.status, self.pieces))
         free = statuses.count(PieceStatus.free)
         done = statuses.count(PieceStatus.done)
-        in_progress = self.pieces.count(PieceStatus.in_progress)
-        return {PieceStatus.free: free, PieceStatus.done: done, PieceStatus.in_progress: in_progress}
+        in_progress = statuses.count(PieceStatus.in_progress)
+        written = statuses.count(PieceStatus.written)
+        return {PieceStatus.free: free, PieceStatus.done: done, PieceStatus.in_progress: in_progress, PieceStatus.written: written}
 
     async def get_piece(self):
         while True:
@@ -85,6 +95,17 @@ class Piece_Manager():
                 self.lock = False
             else:
                 await asyncio.sleep(1)
+
+    async def put_in_queue(self, piece):
+        await self.done_queue.put(piece)
+
+    def get_pieces_written(self):
+        return self.pieces_status()[PieceStatus.written]
+
+    def all_pieces_done(self):
+        pieces_status = self.pieces_status()
+        if pieces_status[PieceStatus.written] == len(self.pieces):
+            return True
 
     def __repr__(self):
         return f'piece_manager{self.pieces_status()}'
