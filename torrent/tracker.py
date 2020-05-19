@@ -78,7 +78,7 @@ def udp_request(tracker, torrent_file, peer_manager, wait=0, recursive=False):
         parsed_peers = parse_peers(peers)
         peer_manager.add_peers(parsed_peers)
         logger.info(f" {len(peers)} peers add to peer_manager and go to sleep for {interval} seconds")
-        sleep(int(interval / 5))
+        sleep(interval / 5)
 
 
 def parse_peers(raw_peers):
@@ -292,7 +292,7 @@ def http_request(url, peer_manager, wait=0, recursive=False):
         interval, peers = parsed_res
         peer_manager.add_peers(peers)
         logger.info(f"{len(peers)} peers add to peer_manager and go to sleep for {interval} seconds")
-        sleep(int(interval / 5))
+        sleep(interval / 5)
 
 
 def read_http_tracker_response(content):
