@@ -1,6 +1,6 @@
 requests==2.22.0
 pytest==5.2.1
-urllib3==1.25.7
+urllib3==1.26.5
 pytest-asyncio==0.10.0
 tqdm==4.46.0
 bitarray==1.2.1
